@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ダイヤモンド鳥海探索 (GitHub Pages 用)</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Hiragino Kaku Gothic Pro", "メイリオ", sans-serif; margin: 18px; line-height:1.5; }
+  input, select, button { font-size: 1rem; padding: 6px; margin: 4px 0; }
+  .grid { display:grid; gap:10px; grid-template-columns: 1fr 1fr; max-width:1000px; }
+  .controls { margin-bottom:12px; }
+  table { border-collapse: collapse; width:100%; margin-top:12px; }
+  th, td { border:1px solid #ccc; padding:6px; text-align:center; }
+  pre { background:#f7f7f7; padding:8px; overflow:auto; }
+  .note { color:#555; font-size:0.9rem; }
+</style>
+</head>
+<body>
+<h1>ダイヤモンド鳥海探索</h1>
+
+<p class="note">鳥海山（七高山）: <strong>39.09945869580092, 140.0513154997461</strong> 標高 2230 m に夕日が沈む日を探索します。<br><br>
+<strong>観測地点の緯度経度を Google Maps 形式で貼り付け</strong><br>
+Googleマップ上の観測地点にマウスポインタを置いて右クリック。<br>
+緯度経度データを左クリックでコピーして、下の「観測地点」欄に貼り付けてください。<br>
+※デフォルトの観測地点は「前森公園展望広場」です。<br><br>
+
+開始日を指定して探索してください（探索期間は開始日から5年）。</p>
+
+<div class="controls">
+  <label>観測地点（lat,lon）: <input id="latlon" size="32" value="39.17405247742861, 140.49763273615943"></label><br>
+  <label>開始日 (YYYY-MM-DD): <input id="startdate" type="date" value=""></label>
+  <!-- <label>タイムゾーンオフセット (例 JST=9): <input id="tz" size="3" value=""></label> --> <br>
+  <label>方位許容差 (°): <input id="az_tol" size="4" value="0.5"></label>
+  <label>仰角許容差 (°): <input id="alt_tol" size="4" value="0.5"></label>
+  <label>探索年数: <input id="years" size="2" value="5"></label><br>
+  <button id="run">探索開始</button>
+  <button id="download" disabled>CSV をダウンロード</button>
+  <span id="status"></span>
+</div>
+
+<div id="summary"></div>
+<div id="results"></div>
+
+<hr/>
+<h3>注意</h3>
+<ul>
+  <li>このページは完全にブラウザ内で動作します（インターネット接続不要）。</li>
+  <li>精度は実用的ですが絶対高精度ではありません。写真一致などは大気差補正や高精度暦が必要です。</li>
+  <li>データの利用にあたっては、自己責任でお願いします。</li>
+</ul>
+
+<script>
+/* ---------- 天文・地理の関数（自己完結） ---------- */
+/* Julian Day */
+function toJulianDay(dtUtc) {
+  // dtUtc: JS Date in UTC (use new Date(Date.UTC(...)) or dt.toISOString->Date)
+  const year = dtUtc.getUTCFullYear();
+  let month = dtUtc.getUTCMonth() + 1;
+  let day = dtUtc.getUTCDate() + (dtUtc.getUTCHours() + dtUtc.getUTCMinutes()/60 + dtUtc.getUTCSeconds()/3600 + dtUtc.getUTCMilliseconds()/3.6e6) / 24.0;
+  let Y = year;
+  let M = month;
+  if (M <= 2) { Y = Y - 1; M = M + 12; }
+  const A = Math.floor(Y/100);
+  const B = 2 - A + Math.floor(A/4);
+  const JD = Math.floor(365.25*(Y+4716)) + Math.floor(30.6001*(M+1)) + day + B - 1524.5;
+  return JD;
+}
+
+/* 太陽の黄経/赤緯（簡易式） */
+function sunPosition(jd) {
+  const n = jd - 2451545.0;
+  let L = (280.460 + 0.9856474 * n) % 360;
+  if (L < 0) L += 360;
+  const g = (357.528 + 0.9856003 * n) % 360;
+  const gRad = g * Math.PI/180;
+  let lam = L + 1.915 * Math.sin(gRad) + 0.020 * Math.sin(2*gRad);
+  lam = (lam % 360 + 360) % 360;
+  const eps = 23.439 * Math.PI/180;
+  const lamRad = lam * Math.PI/180;
+  const delta = Math.asin(Math.sin(eps) * Math.sin(lamRad)) * 180/Math.PI;
+  return {lambda: lam, declination: delta};
+}
+
+/* 局所太陽時→時角 H (deg)
+   localClock: JS Date treated as local "clock" (naive) 
+   tzOffsetHours: numeric (e.g. JST=9)
+   longitude: east-positive degrees
+   formula: local_solar_time = local_clock + (longitude/15) - tz_offset
+   H = 15*(local_solar_time - 12)
+*/
+function hourAngleFromLocalClock(localClock, longitude, tzOffsetHours) {
+  // localClock is JS Date (we'll take localClock's Y/M/D/H/M/S as clock in tzOffset)
+  // Extract local hour/fraction
+  const Hh = localClock.getHours() + localClock.getMinutes()/60 + localClock.getSeconds()/3600 + localClock.getMilliseconds()/3.6e6;
+  const localSolarTime = Hh + (longitude / 15.0) - tzOffsetHours;
+  const H = 15.0 * (localSolarTime - 12.0);
+  return H;
+}
+
+/* 太陽の高度 h (deg) と方位 A (deg, 北=0, 東回り) を返す
+   localClock: JS Date representing local clock (naive), tzOffsetHours is numeric
+*/
+function sunAltAz(latitude, longitude, localClock, tzOffsetHours) {
+  // convert localClock to UTC Date object for JD calculation
+  // localClock is naive local time with tzOffsetHours
+  const utcMillis = Date.UTC(
+    localClock.getFullYear(), localClock.getMonth(), localClock.getDate(),
+    localClock.getHours() - tzOffsetHours, localClock.getMinutes(), localClock.getSeconds(), localClock.getMilliseconds()
+  );
+  const dtUtc = new Date(utcMillis);
+  const jd = toJulianDay(dtUtc);
+  const sp = sunPosition(jd);
+  const delta = sp.declination * Math.PI/180;
+  const phi = latitude * Math.PI/180;
+  const H = hourAngleFromLocalClock(localClock, longitude, tzOffsetHours) * Math.PI/180;
+  // altitude
+  let sinh = Math.sin(phi)*Math.sin(delta) + Math.cos(phi)*Math.cos(delta)*Math.cos(H);
+  sinh = Math.max(-1, Math.min(1, sinh));
+  const h = Math.asin(sinh) * 180/Math.PI;
+  // azimuth: A (north=0, east=90)
+  const y = -Math.sin(H);
+  const x = Math.cos(phi)*Math.tan(delta) - Math.sin(phi)*Math.cos(H);
+  let A = Math.atan2(y, x) * 180/Math.PI;
+  A = (A + 360) % 360;
+  return {alt: h, az: A, decl: sp.declination};
+}
+
+/* 方位・仰角（観測地 -> 山頂） */
+function bearingAndElevation(lat1, lon1, h1, lat2, lon2, h2) {
+  const R = 6371000.0;
+  const φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180;
+  const dlon = (lon2 - lon1) * Math.PI/180;
+  const y = Math.sin(dlon) * Math.cos(φ2);
+  const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(dlon);
+  let bearing = Math.atan2(y, x) * 180/Math.PI;
+  bearing = (bearing + 360) % 360;
+  const central = Math.acos(Math.max(-1, Math.min(1, Math.sin(φ1)*Math.sin(φ2) + Math.cos(φ1)*Math.cos(φ2)*Math.cos(dlon))));
+  const dist = R * central;
+  const dh = h2 - h1;
+  const elev = Math.atan2(dh, dist) * 180/Math.PI;
+  return {bearing: bearing, elevation: elev, distance_m: dist};
+}
+
+/* 小さな角度差（0..180） */
+function angleDiff(a, b) {
+  let d = Math.abs(a - b) % 360;
+  return Math.min(d, 360 - d);
+}
+
+/* CSV 生成 (simple) */
+function downloadCSV(rows, filename) {
+  if (!rows || rows.length === 0) return;
+  const keys = Object.keys(rows[0]);
+  const lines = [keys.join(',')];
+  for (const r of rows) {
+    lines.push(keys.map(k => {
+      const v = r[k];
+      if (typeof v === 'string' && (v.includes(',') || v.includes('"'))) return `"${v.replace(/"/g,'""')}"`;
+      return v;
+    }).join(','));
+  }
+  const blob = new Blob([lines.join('\n')], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename || 'diamond_chokai.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- UI, 主処理 ---------- */
+document.getElementById('run').addEventListener('click', async () => {
+  const latlon = document.getElementById('latlon').value.trim();
+  const startdate = document.getElementById('startdate').value;
+  // const tzElem = document.getElementById('tz').value.trim();
+  // const tz = tzElem === '' ? (-new Date().getTimezoneOffset()/60) : Number(tzElem);
+  const tz = 9
+  const az_tol = parseFloat(document.getElementById('az_tol').value);
+  const alt_tol = parseFloat(document.getElementById('alt_tol').value);
+  const years = parseInt(document.getElementById('years').value, 10) || 5;
+  const status = document.getElementById('status'); status.textContent = '処理中...'; status.style.color='black';
+  document.getElementById('results').innerHTML = ''; document.getElementById('summary').innerHTML='';
+
+  // parse latlon
+  const m = latlon.match(/(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
+  if (!m) { alert('緯度,経度 を "lat, lon" 形式で入力してください'); status.textContent=''; return; }
+  const lat = Number(m[1]), lon = Number(m[2]);
+
+  if (!startdate) { alert('開始日を選んでください'); status.textContent=''; return; }
+  const start = new Date(startdate + 'T00:00:00');
+
+  // target mountain (Chokai Shichikouyama)
+  const mtLat = 39.09945869580092;
+  const mtLon = 140.0513154997461;
+  const mtH = 2230.0;
+  const obsH = 80.0;
+
+  // compute target bearing/elev
+  const be = bearingAndElevation(lat, lon, obsH, mtLat, mtLon, mtH);
+  const targetAz = be.bearing;
+  const targetElev = be.elevation;
+  const distKm = be.distance_m / 1000;
+
+  const summary = document.getElementById('summary');
+  summary.innerHTML = `<strong>鳥海山方向</strong> 方位=${targetAz.toFixed(6)}°　山頂見かけ仰角=${targetElev.toFixed(6)}°　距離=${distKm.toFixed(2)} km`;
+
+  // scan for years
+  const rows = [];
+  const endYear = start.getFullYear() + years - 1;
+
+  // coarse step (minutes) and refinement window
+  const coarseStep = 5; // min
+  const refineWindowMin = 20; // ± minutes
+  const refineStep = 1; // 1 minute
+
+  // Loop years
+  for (let Y = start.getFullYear(); Y <= endYear; Y++) {
+    // choose starting day: if Y == start.year, start at start date; otherwise Jan 1
+    const startDay = (Y === start.getFullYear()) ? new Date(start) : new Date(Y,0,1,0,0,0);
+    const endDay = new Date(Y,11,31,23,59,59);
+
+    let candidates = [];
+    // coarse scan full year in local clock time
+    for (let dt = new Date(startDay); dt <= endDay; dt = new Date(dt.getTime() + coarseStep*60000)) {
+      const s = sunAltAz(lat, lon, dt, tz);
+      const azDiff = angleDiff(s.az, targetAz);
+      const altDiff = Math.abs(s.alt - targetElev);
+      if (azDiff <= Math.max(1.0, az_tol*2) && altDiff <= Math.max(1.0, alt_tol*2)) {
+        candidates.push(new Date(dt));
+      }
+    }
+
+    // refine each candidate
+    const foundThisYear = [];
+    const seen = new Set();
+    for (const base of candidates) {
+      for (let m = -refineWindowMin; m <= refineWindowMin; m += refineStep) {
+        const t = new Date(base.getTime() + m*60000);
+        const s = sunAltAz(lat, lon, t, tz);
+        const azDiff = angleDiff(s.az, targetAz);
+        const altDiff = Math.abs(s.alt - targetElev);
+        if (azDiff <= az_tol && altDiff <= alt_tol) {
+          const key = `${t.toISOString().slice(0,10)} ${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            foundThisYear.push({
+              year: Y,
+              date: t.toISOString().slice(0,10),
+              time: t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0'),
+              sun_az: s.az.toFixed(3),
+              sun_alt: s.alt.toFixed(3),
+              az_diff: azDiff.toFixed(3),
+              alt_diff: (s.alt - targetElev).toFixed(3)
+            });
+          }
+        }
+      }
+    }
+
+    if (foundThisYear.length > 0) {
+      // append sorted by date/time
+      foundThisYear.sort((a,b) => (a.date + ' ' + a.time) < (b.date + ' ' + b.time) ? -1 : 1);
+      for (const r of foundThisYear) rows.push(r);
+    } else {
+      // find closest moment of year (coarse then refine)
+      // coarse best by metric = azDiff + |altDiff|
+      let best = null, bestScore = 1e9;
+      for (let dt = new Date(startDay); dt <= endDay; dt = new Date(dt.getTime() + 10*60000)) {
+        const s = sunAltAz(lat, lon, dt, tz);
+        const azDiff = angleDiff(s.az, targetAz);
+        const altDiff = Math.abs(s.alt - targetElev);
+        const score = azDiff + altDiff;
+        if (score < bestScore) { bestScore = score; best = new Date(dt); }
+      }
+      // refine ±60 min
+      let bestRef = null; bestScore = 1e9;
+      for (let m = -60; m <= 60; m++) {
+        const t = new Date(best.getTime() + m*60000);
+        const s = sunAltAz(lat, lon, t, tz);
+        const azDiff = angleDiff(s.az, targetAz);
+        const altDiff = Math.abs(s.alt - targetElev);
+        const score = azDiff + altDiff;
+        if (score < bestScore) { bestScore = score; bestRef = {t, s, score}; }
+      }
+      const t = bestRef.t;
+      rows.push({
+        year: Y,
+        date: t.toISOString().slice(0,10),
+        time: t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0'),
+        sun_az: bestRef.s.az.toFixed(3),
+        sun_alt: bestRef.s.alt.toFixed(3),
+        az_diff: angleDiff(bestRef.s.az, targetAz).toFixed(3),
+        alt_diff: (bestRef.s.alt - targetElev).toFixed(3),
+        note: 'closest (no exact match)'
+      });
+    }
+  }
+
+  // show results in table
+  const resDiv = document.getElementById('results');
+  if (rows.length === 0) {
+    resDiv.innerHTML = '<p>該当なし。</p>';
+    status.textContent = ''; document.getElementById('download').disabled = true;
+    return;
+  }
+  let html = '<table><thead><tr><th>年</th><th>日付</th><th>時刻(現地)</th><th>太陽方位</th><th>太陽高度</th><th>Δ方位</th><th>Δ仰角</th><th>備考</th></tr></thead><tbody>';
+  for (const r of rows) {
+    html += `<tr><td>${r.year}</td><td>${r.date}</td><td>${r.time}</td><td>${r.sun_az}</td><td>${r.sun_alt}</td><td>${r.az_diff}</td><td>${r.alt_diff}</td><td>${r.note||''}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  resDiv.innerHTML = html;
+  status.textContent = `完了（${rows.length} 件）`; status.style.color='green';
+
+  // enable download
+  document.getElementById('download').disabled = false;
+  document.getElementById('download').onclick = () => downloadCSV(rows, `diamond_chokai_${start.getFullYear()}_${endYear}.csv`);
+});
+
+
+// prefill startdate to today
+(function(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = (d.getMonth()+1).toString().padStart(2,'0');
+  const dd = d.getDate().toString().padStart(2,'0');
+  document.getElementById('startdate').value = `${y}-${m}-${dd}`;
+  // default tz from browser
+  const tz = -new Date().getTimezoneOffset()/60;
+  document.getElementById('tz').value = tz;
+})();
+</script>
+</body>
+</html>
+
