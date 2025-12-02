@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>ダイヤモンド鳥海探索 (GitHub Pages 用)</title>
+<title>ダイヤモンド富士探索 (GitHub Pages 用)</title>
 <style>
   body { font-family: system-ui, -apple-system, "Hiragino Kaku Gothic Pro", "メイリオ", sans-serif; margin: 18px; line-height:1.5; }
   input, select, button { font-size: 1rem; padding: 6px; margin: 4px 0; }
@@ -16,21 +16,20 @@
 </style>
 </head>
 <body>
-<h1>ダイヤモンド鳥海探索</h1>
+<h1>ダイヤモンド富士探索</h1>
 
-<p class="note">鳥海山（七高山）: <strong>39.09945869580092, 140.0513154997461</strong> 標高 2230 m に夕日が沈む日を探索します。<br><br>
+<p class="note">富士山（剣ヶ峰）: <strong>35.3607320650336, 138.72743618397786</strong> に夕日が沈む日を探索します。<br><br>
 <strong>観測地点の緯度経度を Google Maps 形式で貼り付け</strong><br>
 Googleマップ上の観測地点にマウスポインタを置いて右クリック。<br>
 緯度経度データを左クリックでコピーして、下の「観測地点」欄に貼り付けてください。<br>
-※デフォルトの観測地点は「前森公園展望広場」です。<br><br>
+※デフォルトの観測地点は「高尾山 大見晴台 35.624571051074724, 139.24311313463411」です。<br><br>
 
 観測地点の標高を指定してください。
-横手盆地だとデフォルトの80mでOKだと思われます。<br>
 開始日を指定して探索してください（探索期間は開始日から5年）。</p>
 
 <div class="controls">
-  <label>観測地点（lat,lon）: <input id="latlon" size="32" value="39.17405247742861, 140.49763273615943"></label><br>
-  <label>観測地点の標高: <input id="obs_elevation" size="5" value="80" style="text-align:right"> m</label><br>
+  <label>観測地点（lat,lon）: <input id="latlon" size="32" value="35.624571051074724, 139.24311313463411"></label><br>
+  <label>観測地点の標高: <input id="obs_elevation" size="5" value="593" style="text-align:right"> m</label><br>
   <label>開始日 (YYYY-MM-DD): <input id="startdate" type="date" value=""></label><br>
   <label>方位許容差 (°): <input id="az_tol" size="4" value="0.5"></label>
   <label>仰角許容差 (°): <input id="alt_tol" size="4" value="0.5"></label>
@@ -192,11 +191,11 @@ document.getElementById('run').addEventListener('click', async () => {
   if (!startdate) { alert('開始日を選んでください'); status.textContent=''; return; }
   const start = new Date(startdate + 'T00:00:00');
 
-  // target mountain (Chokai Shichikosan)
-  const mtLat = 39.09945869580092;
-  const mtLon = 140.0513154997461;
-  const mtH = 2230.0;
-  // const obsH = 80.0;
+  // target mountain (Fujisan Kengamine 35.3607320650336, 138.72743618397786)
+  const mtLat = 35.3607320650336;
+  const mtLon = 138.72743618397786;
+  const mtH = 3776.0;
+  // const obsH = 593.0;
 
   // compute target bearing/elev
   const be = bearingAndElevation(lat, lon, obsH, mtLat, mtLon, mtH);
@@ -205,7 +204,7 @@ document.getElementById('run').addEventListener('click', async () => {
   const distKm = be.distance_m / 1000;
 
   const summary = document.getElementById('summary');
-  summary.innerHTML = `<strong>鳥海山方向</strong>　方位=${targetAz.toFixed(6)}°　山頂見かけ仰角=${targetElev.toFixed(6)}°　距離=${distKm.toFixed(2)} km　観測地点標高=${obsH.toFixed(2)} m`;
+  summary.innerHTML = `<strong>富士山方向</strong>　方位=${targetAz.toFixed(6)}°　山頂見かけ仰角=${targetElev.toFixed(6)}°　距離=${distKm.toFixed(2)} km　観測地点標高=${obsH.toFixed(2)} m`;
 
   // scan for years
   const rows = [];
