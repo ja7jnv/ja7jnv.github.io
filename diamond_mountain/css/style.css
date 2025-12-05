@@ -1,0 +1,89 @@
+/* 基本レイアウト */
+html,
+body,
+#map {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+}
+
+/* トップバー */
+#top {
+    padding: 10px;
+    background: #f3f3f3;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+    z-index: 1000;
+}
+
+/* コントロール */
+#controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+input,
+button,
+select {
+    padding: 6px 8px;
+    font-size: 14px;
+}
+
+/* マップ */
+#map {
+    flex: 1;
+}
+
+/* 情報表示エリア */
+#info {
+    padding: 8px;
+    max-height: 220px;
+    overflow: auto;
+    font-size: 13px;
+}
+
+/* 凡例 */
+.legend {
+    background: white;
+    padding: 6px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .12);
+}
+
+/* Leafletカスタマイズ */
+.leaflet-container {
+    cursor: crosshair !important;
+}
+
+.leaflet-popup-content-wrapper {
+    padding: 10px 14px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+.leaflet-popup-content-wrapper.mountain-popup .leaflet-popup-content {
+    white-space: normal !important;
+    width: auto !important;
+    max-width: 300px !important;
+    line-height: 1.6 !important;
+    font-size: 15px !important;
+    font-weight: 600;
+    text-align: center;
+    padding: 8px 12px !important;
+}
+
+.leaflet-popup-tip {
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ユーティリティ */
+.hide-item {
+    display: none;
+}
