@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>ダイヤモンドマウンテン可視領域マップ</title>
+    <title>ダイヤモンドマウンテン</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -15,6 +15,7 @@
 
 <body>
     <div id="top">
+		<p> 山の頂上に夕日が沈む日を探索します </p>
         <div id="controls">
             <label>観測開始日:
                 <input type="date" id="startDate">
@@ -27,7 +28,7 @@
                     <option value="5">5年</option>
                 </select>
             </label>
-            <label>中心マウンテン:
+            <label>対象の山:
                 <select id="mountain">
                     <option value="" disabled selected>！！ 山を選択 ！！</option>
                     <!-- 山のオプションはJavaScriptで動的に生成されます -->
