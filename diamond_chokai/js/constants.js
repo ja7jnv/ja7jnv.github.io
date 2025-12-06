@@ -29,11 +29,15 @@ const CONSTANTS = {
     // ===== 地図表示設定 =====
     MAP: {
         INITIAL_CENTER: {
-            lat: 35.62,		// 高尾山
+			lat: 39.189757, // 柳田橋
+			lon: 140.450592
+			/* 高尾山
+            lat: 35.62,
             lon: 139.24
+			*/
         },
         INITIAL_ZOOM: 10,
-        MOUNTAIN_VIEW_OFFSET_KM: 40, // 山から東方向のオフセット(km)
+        MOUNTAIN_VIEW_OFFSET_KM: 20, // 山から東方向のオフセット(km)
         VISIBILITY_CIRCLE_RADIUS_M: 500, // 可視地点の円の半径(m)
     },
     

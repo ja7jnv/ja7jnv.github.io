@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ダイヤモンドマウンテン</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../diamond_mountain/css/style.css" />
+</head>
+
+<body>
+    <div id="top">
+		<p> 山の頂上に夕日が沈む日を探索します </p>
+        <div id="controls">
+            <label>観測開始日:
+                <input type="date" id="startDate">
+            </label>
+            <label>探索期間:
+                <select id="years">
+                    <option value="1" selected>1年</option>
+                    <option value="2">2年</option>
+                    <option value="3">3年</option>
+                    <option value="5">5年</option>
+                </select>
+            </label>
+            <label>対象の山:
+                <select id="mountain">
+                    <option value="" disabled selected>！！ 山を選択 ！！</option>
+                    <!-- 山のオプションはJavaScriptで動的に生成されます -->
+                </select>
+            </label>
+            <label>観測地表からの高度(m): <input id="obsElev" type="number" value="0" style="width:80px"></label>
+            <label>方位許容(°): <input id="azTol" type="number" value="0.5" step="0.1" style="width:70px"></label>
+            <label>仰角許容(°): <input id="elTol" type="number" value="0.5" step="0.1" style="width:70px"></label>
+            <button id="run" class="hide-item">可視領域計算</button>
+            <button id="clear" class="hide-item">クリア</button>
+        </div>
+        <div id="info">座標をクリックするとその地点の可視判定・山方向・山頂仰角を表示します。</div>
+    </div>
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Custom JavaScript (読み込み順序重要!) -->
+    <script src="js/constants.js"></script>
+    <script src="../diamond_mountain/js/utils.js"></script>
+    <script src="js/config.js"></script>
+    <script src="../diamond_mountain/js/astronomy.js"></script>
+    <script src="../diamond_mountain/js/elevation.js"></script>
+    <script src="../diamond_mountain/js/visibility.js"></script>
+    <script src="../diamond_mountain/js/main.js"></script>
+</body>
+
+</html>
