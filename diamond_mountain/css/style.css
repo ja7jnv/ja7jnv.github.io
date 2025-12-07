@@ -87,3 +87,8 @@ select {
 .hide-item {
     display: none;
 }
+
+img {
+    max-width: 100%; /* 画像の最大幅を親要素の幅に制限する */
+    height: auto;    /* 縦横比を維持する */
+}
