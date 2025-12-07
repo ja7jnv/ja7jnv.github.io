@@ -33,12 +33,16 @@ input,
 button,
 select {
     padding: 6px 8px;
-    font-size: 14px;
+	font-size: 14px;
 }
 
 /* マップ */
 #map {
-    flex: 1;
+    flex: 1; /* 残りのスペースを埋める
+	         （flex-grow: 1, flex-shrink: 1, flex-basis: 0% のショートハンド） */
+    /* モバイルブラウザでの表示崩れを防ぐための追加設定 */
+    height: 100%; /* 親要素の高さの100%を基準にする */
+    min-height: 0; /* flexアイテムが内容物の最小サイズ以下に縮むことを許可する */
 }
 
 /* 情報表示エリア */
