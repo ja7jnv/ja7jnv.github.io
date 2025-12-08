@@ -38,11 +38,9 @@ select {
 
 /* マップ */
 #map {
-    flex: 1; /* 残りのスペースを埋める
-	         （flex-grow: 1, flex-shrink: 1, flex-basis: 0% のショートハンド） */
-    /* モバイルブラウザでの表示崩れを防ぐための追加設定 */
-    height: 100%; /* 親要素の高さの100%を基準にする */
-    min-height: 0; /* flexアイテムが内容物の最小サイズ以下に縮むことを許可する */
+    flex: 1; /* 残りのスペースを埋める */
+    height: 100%;
+    min-height: 0;
 }
 
 /* 情報表示エリア */
@@ -93,6 +91,52 @@ select {
 }
 
 img {
-    max-width: 100%; /* 画像の最大幅を親要素の幅に制限する */
-    height: auto;    /* 縦横比を維持する */
+    max-width: 100%;
+    height: auto;
 }
+
+/* =========================================================
+   📱 スマホ最適化（600px 以下）
+   ========================================================= */
+@media (max-width: 600px) {
+
+    /* スマホでは縦2分割構造にする */
+    body {
+        flex-direction: column;
+    }
+
+    /* コントロール部分を独立スクロールに */
+    #controls {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        width: 100%;
+        max-height: 40vh;      /* 上の40%をコントロールに */
+        overflow-y: auto;       /* コントロールだけスクロール */
+        padding-right: 6px;     /* スクロールバー対策 */
+    }
+
+    /* 地図を常に60%確保 */
+    #map {
+        height: 60vh !important;
+        min-height: 60vh !important;
+        flex: none;             /* スクロールで縮まないように */
+    }
+
+    /* 入力欄の幅調整 */
+    #controls input,
+    #controls select,
+    #controls button {
+        width: 100%;
+        font-size: 14px;
+        padding: 6px 8px;
+    }
+
+    /* 情報パネルも少し圧縮 */
+    #info {
+        max-height: 150px;
+        font-size: 12px;
+    }
+}
+
+
