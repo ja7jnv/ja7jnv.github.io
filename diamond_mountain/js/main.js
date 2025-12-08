@@ -254,10 +254,12 @@ window.addEventListener('load', function() {
 
 
         // ポップアップ内容作成
-        let s = `座標: ${lat}, ${lon}\n`;
+        let s = `観測地: 北緯 ${lat}°, 東経 ${lon}°\n`;
         s += `地形標高: ${Utils.formatNumber(terrainElev, 1)}m\n`;
+		/*
         s += `+地表からの高さ: ${inputs.groundInput}m\n`;
         s += `=総観測高度: ${Utils.formatNumber(totalObsElev, 1)}m\n`;
+		*/
         s += `山の方位: ${Utils.formatNumber(ba.bearing, 3)}°  仰角: ${Utils.formatNumber(ba.elev, 3)}°\n`;
 
         if (firstMatch) {

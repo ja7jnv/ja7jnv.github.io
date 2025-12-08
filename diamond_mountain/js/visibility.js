@@ -17,7 +17,7 @@ function findSunMountainAlignment(lat, lon, startDate, years, azTol, elTol, ba, 
     const endDate = new Date(startDate);
     endDate.setFullYear(endDate.getFullYear() + years);
 
-    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));		// 差分をミリ秒から日数に変換
 
     for (let day = 0; day < totalDays; day++) {
 
@@ -93,10 +93,10 @@ async function computeVisibility(opts) {
             const ba = bearingAndApparentElevation(lat, lon, obsElev, mt.lat, mt.lon, mt.h);
 
             // まず夕日（西側）
-            let bearingOK_sunset = (ba.bearing >= 150 && ba.bearing <= 360);
+            let bearingOK_sunset = (ba.bearing >= 150 && ba.bearing <= 360);	// 150度（南南東）から360度（北）
 
             // 朝日（東側）
-            let bearingOK_sunrise = (ba.bearing >= 45 && ba.bearing <= 135);
+            let bearingOK_sunrise = (ba.bearing >= 45 && ba.bearing <= 135);	// 45度（北東）から135度（南東）
 
             let match = null;
 
@@ -104,7 +104,7 @@ async function computeVisibility(opts) {
             if (bearingOK_sunset) {
                 match = findSunMountainAlignment(
                     lat, lon, startDate, years, azTol, elTol, ba,
-                    { start: 15, end: 18 }, "sunset"
+                    { start: 15, end: 18 }, "sunset"		//	15時から18時
                 );
             }
 
@@ -112,7 +112,7 @@ async function computeVisibility(opts) {
             if (!match && bearingOK_sunrise) {
                 match = findSunMountainAlignment(
                     lat, lon, startDate, years, azTol, elTol, ba,
-                    { start: 4, end: 8 }, "sunrise"
+                    { start: 4, end: 8 }, "sunrise"			// 4時から8時
                 );
             }
 
