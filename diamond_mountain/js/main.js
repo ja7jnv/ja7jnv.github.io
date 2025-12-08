@@ -61,60 +61,100 @@ window.addEventListener('load', function() {
             .openPopup();
     }
 
-    // ===== ヘルパー関数: 詳細な太陽-山アライメント検索(クリック時用) =====
-    function findDetailedAlignment(lat, lon, startDate, years, azTol, elTol, ba) {
-        let firstMatch = null;
-        let lastMatch = null;
-        let bestMatch = null;
-        let bestError = Infinity;
+	// ===== ヘルパー関数: 詳細な太陽-山アライメント検索(クリック時用) =====
+	function findDetailedAlignment(lat, lon, startDate, years, azTol, elTol, ba) {
+		const endDate = new Date(startDate);
+		endDate.setFullYear(endDate.getFullYear() + years);
+		const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+		const stepMin = CONSTANTS.SEARCH.TIME_STEP_MINUTES_CLICK || CONSTANTS.SEARCH.TIME_STEP_MINUTES;
 
-        const endDate = new Date(startDate);
-        endDate.setFullYear(endDate.getFullYear() + years);
-        const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+		// 朝日・夕日の時間帯
+		const SUNSET_HOURS = { start: 15, end: 18 }; // 下降中
+		const SUNRISE_HOURS = { start: 4, end: 8 };  // 上昇中
 
-        let consecutiveMatchFound = false;
+		// 内部検索
+		function runPass(mode, hours) {
+			let firstMatch = null;
+			let lastMatch = null;
+			let bestMatch = null;
+			let bestError = Infinity;
 
-        for (let day = 0; day < totalDays; day++) {
-            const currentDate = new Date(startDate);
-            currentDate.setDate(currentDate.getDate() + day);
+			for (let day = 0; day < totalDays; day++) {
+				const currentDate = new Date(startDate);
+				currentDate.setDate(currentDate.getDate() + day);
 
-            const Y = currentDate.getFullYear();
-            const M = currentDate.getMonth();
-            const D = currentDate.getDate();
+				const Y = currentDate.getFullYear();
+				const M = currentDate.getMonth();
+				const D = currentDate.getDate();
 
-            let dayHasMatch = false;
+				let dayHasMatch = false;
+				let prevAlt = null;
 
-            for (let hh = CONSTANTS.SEARCH.TIME_START_HOUR; hh <= CONSTANTS.SEARCH.TIME_END_HOUR; hh++) {
-                for (let mm = 0; mm < 60; mm += CONSTANTS.SEARCH.TIME_STEP_MINUTES_CLICK) {
-                    const dt = new Date(Y, M, D, hh, mm, 0);
-                    const pos = sunAltAzLocal(lat, lon, dt, CONSTANTS.JST_OFFSET);
+				for (let hh = hours.start; hh <= hours.end; hh++) {
+					for (let mm = 0; mm < 60; mm += stepMin) {
+						const dt = new Date(Y, M, D, hh, mm, 0);
+						const pos = sunAltAzLocal(lat, lon, dt, CONSTANTS.JST_OFFSET);
 
-                    const azDiff = angleDiff(pos.az, ba.bearing);
-                    const elDiff = Math.abs(pos.alt - ba.elev);
+						if (pos.alt < CONSTANTS.SEARCH.MIN_SUN_ALTITUDE) {
+							prevAlt = pos.alt;
+							continue;
+						}
 
-                    if (azDiff <= azTol && elDiff <= elTol) {
-                        dayHasMatch = true;
-                        const totalError = azDiff + elDiff;
+						const azDiff = angleDiff(pos.az, ba.bearing);
+						const elDiff = Math.abs(pos.alt - ba.elev);
 
-                        if (!firstMatch) firstMatch = { dt, pos };
-                        lastMatch = { dt, pos };
-                        
-                        if (totalError < bestError) {
-                            bestError = totalError;
-                            bestMatch = { dt, pos };
-                        }
-                    }
-                }
-            }
+						if (azDiff <= azTol && elDiff <= elTol) {
+							let trendOk = true;
 
-            if (firstMatch && !dayHasMatch) {
-                consecutiveMatchFound = true;
-                break;
-            }
-        }
+							if (mode === 'sunset') trendOk = (prevAlt === null) ? true : (pos.alt < prevAlt);
+							if (mode === 'sunrise') trendOk = (prevAlt === null) ? true : (pos.alt > prevAlt);
 
-        return { firstMatch, lastMatch, bestMatch };
-    }
+							if (trendOk) {
+								dayHasMatch = true;
+
+								const totalError = azDiff + elDiff;
+
+								if (!firstMatch) firstMatch = { dt, pos, mode };
+								lastMatch = { dt, pos, mode };
+
+								if (totalError < bestError) {
+									bestError = totalError;
+									bestMatch = { dt, pos, mode };
+								}
+							}
+						}
+
+						prevAlt = pos.alt;
+					}
+				}
+
+				if (firstMatch && !dayHasMatch) break;
+			}
+
+			return { firstMatch, lastMatch, bestMatch };
+		}
+
+		// 1. 夕日（下降）を先に探索
+		let res = runPass('sunset', SUNSET_HOURS);
+		if (res.firstMatch) {
+			res.firstMatch.mode = 'sunset';
+			res.lastMatch.mode = 'sunset';
+			res.bestMatch.mode = 'sunset';
+			return res;
+		}
+
+		// 2. 朝日（上昇）を探索
+		res = runPass('sunrise', SUNRISE_HOURS);
+		if (res.firstMatch) {
+			res.firstMatch.mode = 'sunrise';
+			res.lastMatch.mode = 'sunrise';
+			res.bestMatch.mode = 'sunrise';
+		}
+
+		return res;
+	}
+
+
 
     // ===== イベントリスナー: 可視領域計算ボタン =====
     document.getElementById('run').addEventListener('click', async () => {
@@ -206,10 +246,12 @@ window.addEventListener('load', function() {
         );
 
         // 詳細な太陽-山アライメント検索
-        const { firstMatch, lastMatch, bestMatch } = findDetailedAlignment(
-            e.latlng.lat, e.latlng.lng, startDate, inputs.years, 
-            inputs.azTol, inputs.elTol, ba
-        );
+		const alignRes = findDetailedAlignment(
+			e.latlng.lat, e.latlng.lng, startDate, inputs.years,
+			inputs.azTol, inputs.elTol, ba
+		);
+		const { firstMatch, lastMatch, bestMatch, matchedMode } = alignRes;
+
 
         // ポップアップ内容作成
         let s = `座標: ${lat}, ${lon}\n`;
@@ -219,12 +261,23 @@ window.addEventListener('load', function() {
         s += `山の方位: ${Utils.formatNumber(ba.bearing, 3)}°  仰角: ${Utils.formatNumber(ba.elev, 3)}°\n`;
 
         if (firstMatch) {
-            const days = Utils.daysBetween(firstMatch.dt, lastMatch.dt);
+			const mode = bestMatch?.mode || matchedMode;
+			const modeLabel = (mode === 'sunrise') ? '（朝日）' :
+							  (mode === 'sunset')  ? '（夕日）' : '';
 
-            s += `\n直近のダイヤモンド発生可能期間\n`;
-            s += `BEGIN: ${Utils.formatDate(firstMatch.dt)}\n`;
-            s += `END:   ${Utils.formatDate(lastMatch.dt)}\n`;
-            s += `期間: ${days}日間(連続)\n\n`;
+			const days = Utils.daysBetween(firstMatch.dt, lastMatch.dt);
+
+			s += `\n直近のダイヤモンド発生可能期間 ${modeLabel}\n`;
+
+			/*
+			const modeLabel = (matchedMode === 'sunrise') ? '（朝日）' : (matchedMode === 'sunset' ? '（夕日）' : '');
+			const days = Utils.daysBetween(firstMatch.dt, lastMatch.dt);
+
+			s += `\n直近のダイヤモンド発生可能期間 ${modeLabel}\n`;
+			*/
+			s += `BEGIN: ${Utils.formatDate(firstMatch.dt)}\n`;
+			s += `END:   ${Utils.formatDate(lastMatch.dt)}\n`;
+			s += `期間: ${days}日間(連続)\n\n`;
 
             s += `ベストマッチ(この期間内)\n`;
             s += `MATCH: ${Utils.formatDate(bestMatch.dt)}\n`;
