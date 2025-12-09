@@ -209,13 +209,13 @@ window.addEventListener('load', function() {
 
 		const key = this.value;
 
-		// ① （！！山を選択！！） をクリック → 追加モードに戻る
+		//  （！！山を選択もしくは追加！！） をクリック → 追加モードに戻る
 		if (!key) {
 			Utils.showInfo("新しい山を追加するには、地図をクリックしてください。");
 			return;
 		}
 
-		// ② 通常の既存山選択
+		// 既存の山選択
 		const mt = mountains[key];
 		if (!mt) return;
 
@@ -232,7 +232,7 @@ window.addEventListener('load', function() {
 		let mt = getSelectedMountain(inputs.selectedKey);
 
 		// ------------------------------------------------------------
-		// ① 山が未選択（value=""） → 新しい山を登録
+		//  山が未選択（value=""） → 新しい山を登録
 		// ------------------------------------------------------------
 		if (!mt) {
 			Utils.showInfo("クリック地点を山として登録します。標高取得中…");
@@ -280,7 +280,7 @@ window.addEventListener('load', function() {
 
 
 		// ------------------------------------------------------------
-		// ② 山が選ばれている場合 → 通常の詳細検索処理
+		//  山が選ばれている場合 → 通常の詳細検索処理
 		// ------------------------------------------------------------
 
 		const startDate = new Date(inputs.startDateStr);
@@ -309,12 +309,9 @@ window.addEventListener('load', function() {
 		const { firstMatch, lastMatch, bestMatch, matchedMode } = alignRes;
 
 		// ポップアップ作成
-		let s = `座標: ${lat}, ${lon}\n`;
-		s += `地形標高: ${Utils.formatNumber(terrainElev, 1)}m\n`;
-		/*
-		s += `+地表からの高さ: ${inputs.groundInput}m\n`;
-		s += `=総観測高度: ${Utils.formatNumber(totalObsElev, 1)}m\n`;
-		*/
+		// ポップアップ内容作成
+        let s = `観測地: 北緯 ${lat}°, 東経 ${lon}°\n`;
+        s += `地形標高: ${Utils.formatNumber(terrainElev, 1)}m\n`;
 		s += `山の方位: ${Utils.formatNumber(ba.bearing, 3)}°  仰角: ${Utils.formatNumber(ba.elev, 3)}°\n`;
 
 		if (firstMatch) {
