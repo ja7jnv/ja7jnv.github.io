@@ -206,83 +206,133 @@ window.addEventListener('load', function() {
 
     // ===== イベントリスナー: 山選択時の地図移動 =====
     document.getElementById('mountain').addEventListener('change', function() {
-        const mt = getSelectedMountain(this.value);
-        if (!mt) return;
 
-        const view = getViewCenterFromMountain(mt);
-        map.flyTo([view.lat, view.lon], view.zoom, { duration: 1.2 });
+		const key = this.value;
 
-        // マーカーも即座に更新
-        updateMountainMarker(map, mt);
-    });
+		// ① （！！山を選択！！） をクリック → 追加モードに戻る
+		if (!key) {
+			Utils.showInfo("新しい山を追加するには、地図をクリックしてください。");
+			return;
+		}
+
+		// ② 通常の既存山選択
+		const mt = mountains[key];
+		if (!mt) return;
+
+		const view = getViewCenterFromMountain(mt);
+		map.flyTo([view.lat, view.lon], view.zoom, { duration: 1.2 });
+
+		updateMountainMarker(map, mt);
+	});
+
 
     // ===== イベントリスナー: 地図クリック =====
-    map.on('click', async e => {
-        const inputs = getInputValues();
-        const mt = getSelectedMountain(inputs.selectedKey);
-        
-        if (!mt) {
-            alert(CONSTANTS.UI.ERROR_SELECT_MOUNTAIN_FIRST);
-            return;
-        }
+	map.on('click', async e => {
+		const inputs = getInputValues();
+		let mt = getSelectedMountain(inputs.selectedKey);
 
-        const startDate = new Date(inputs.startDateStr);
-        const lat = e.latlng.lat.toFixed(6);
-        const lon = e.latlng.lng.toFixed(6);
+		// ------------------------------------------------------------
+		// ① 山が未選択（value=""） → 新しい山を登録
+		// ------------------------------------------------------------
+		if (!mt) {
+			Utils.showInfo("クリック地点を山として登録します。標高取得中…");
 
-        // 標高取得中表示
-        Utils.showInfo(CONSTANTS.UI.DATE_LOAD_MESSAGE);
+			const elevData = await getElevation(e.latlng.lat, e.latlng.lng);
+			const terrainElev = elevData.elevation;
 
-        // 国土地理院APIで標高取得
-        const elevData = await getElevation(e.latlng.lat, e.latlng.lng);
-        const terrainElev = elevData.elevation;
-        lastTerrainElevation = terrainElev;
-        const totalObsElev = inputs.groundInput + terrainElev;
+			// 名称入力
+			const nameInput = prompt(
+				`山の名前を入力してください（省略可）\n\n座標: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}\n標高: ${terrainElev}m`
+			);
+			const name = nameInput && nameInput.trim() ? nameInput.trim() : "名称なし";
 
-        // 山に対する方位・仰角を計算
-        const ba = bearingAndApparentElevation(
-            e.latlng.lat, e.latlng.lng, totalObsElev,
-            mt.lat, mt.lon, mt.h
-        );
+			// 一意キー
+			const key = "user_" + Date.now();
 
-        // 詳細な太陽-山アライメント検索
+			// 山データ登録
+			mountains[key] = {
+				name: name,
+				lat: e.latlng.lat,
+				lon: e.latlng.lng,
+				h: terrainElev
+			};
+
+			// プルダウンに追加
+			const sel = document.getElementById('mountain');
+			const opt = document.createElement("option");
+			opt.value = key;
+			opt.textContent = name;
+			sel.appendChild(opt);
+
+			// 自動で選択
+			sel.value = key;
+
+			// ★ 追加：選択直後にマーカー表示
+			mt = mountains[key];
+			updateMountainMarker(map, mt);
+			map.setView([mt.lat, mt.lon], CONSTANTS.MAP.INITIAL_ZOOM);
+
+			Utils.showInfo(`山を登録しました: ${name}`);
+
+			// 登録フェーズ終了（詳細検索は行わない）
+			return;
+		}
+
+
+		// ------------------------------------------------------------
+		// ② 山が選ばれている場合 → 通常の詳細検索処理
+		// ------------------------------------------------------------
+
+		const startDate = new Date(inputs.startDateStr);
+		const lat = e.latlng.lat.toFixed(6);
+		const lon = e.latlng.lng.toFixed(6);
+
+		Utils.showInfo(CONSTANTS.UI.DATE_LOAD_MESSAGE);
+
+		// 標高取得
+		const elevData = await getElevation(e.latlng.lat, e.latlng.lng);
+		const terrainElev = elevData.elevation;
+		lastTerrainElevation = terrainElev;
+		const totalObsElev = inputs.groundInput + terrainElev;
+
+		// 山の方向
+		const ba = bearingAndApparentElevation(
+			e.latlng.lat, e.latlng.lng, totalObsElev,
+			mt.lat, mt.lon, mt.h
+		);
+
+		// 詳細アライメント検索
 		const alignRes = findDetailedAlignment(
 			e.latlng.lat, e.latlng.lng, startDate, inputs.years,
 			inputs.azTol, inputs.elTol, ba
 		);
 		const { firstMatch, lastMatch, bestMatch, matchedMode } = alignRes;
 
-
-        // ポップアップ内容作成
-        let s = `観測地: 北緯 ${lat}°, 東経 ${lon}°\n`;
-        s += `地形標高: ${Utils.formatNumber(terrainElev, 1)}m\n`;
+		// ポップアップ作成
+		let s = `座標: ${lat}, ${lon}\n`;
+		s += `地形標高: ${Utils.formatNumber(terrainElev, 1)}m\n`;
 		/*
-        s += `+地表からの高さ: ${inputs.groundInput}m\n`;
-        s += `=総観測高度: ${Utils.formatNumber(totalObsElev, 1)}m\n`;
+		s += `+地表からの高さ: ${inputs.groundInput}m\n`;
+		s += `=総観測高度: ${Utils.formatNumber(totalObsElev, 1)}m\n`;
 		*/
-        s += `山の方位: ${Utils.formatNumber(ba.bearing, 3)}°  仰角: ${Utils.formatNumber(ba.elev, 3)}°\n`;
+		s += `山の方位: ${Utils.formatNumber(ba.bearing, 3)}°  仰角: ${Utils.formatNumber(ba.elev, 3)}°\n`;
 
-        if (firstMatch) {
-			const mode = bestMatch?.mode || matchedMode;
-			const modeLabel = (mode === 'sunrise') ? '（朝日）' :
-							  (mode === 'sunset')  ? '（夕日）' : '';
+		if (firstMatch) {
+			let modeLabelHtml = firstMatch?.mode === 'sunrise'
+				? '<span style="color:#007bff; font-weight:bold;">🌅朝日</span>'
+				: firstMatch?.mode === 'sunset'
+				? '<span style="color:#ff8800; font-weight:bold;">🌇夕日</span>'
+				: '';
 
 			const days = Utils.daysBetween(firstMatch.dt, lastMatch.dt);
 
-			s += `\n直近のダイヤモンド発生可能期間 ${modeLabel}\n`;
-
-			/*
-			const modeLabel = (matchedMode === 'sunrise') ? '（朝日）' : (matchedMode === 'sunset' ? '（夕日）' : '');
-			const days = Utils.daysBetween(firstMatch.dt, lastMatch.dt);
-
-			s += `\n直近のダイヤモンド発生可能期間 ${modeLabel}\n`;
-			*/
+			s += `\n直近のダイヤモンド${modeLabelHtml}発生期間\n`;
 			s += `BEGIN: ${Utils.formatDate(firstMatch.dt)}\n`;
 			s += `END:   ${Utils.formatDate(lastMatch.dt)}\n`;
 			s += `期間: ${days}日間(連続)\n\n`;
 
             s += `ベストマッチ(この期間内)\n`;
-            s += `MATCH: ${Utils.formatDate(bestMatch.dt)}\n`;
+            s += `MATCH: ${Utils.formatDate(bestMatch.dt)} ${modeLabelHtml}\n`;
             s += `  太陽方位 ${Utils.formatNumber(bestMatch.pos.az)}°  高度 ${Utils.formatNumber(bestMatch.pos.alt)}°`;
         } else {
             s += '\n指定期間内で条件を満たす日はありません';
