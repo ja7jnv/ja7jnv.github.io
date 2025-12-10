@@ -244,37 +244,40 @@ window.addEventListener('load', function() {
 			const nameInput = prompt(
 				`山の名前を入力してください（省略可）\n\n座標: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}\n標高: ${terrainElev}m`
 			);
-			const name = nameInput && nameInput.trim() ? nameInput.trim() : "名称なし";
 
-			// 一意キー
-			const key = "user_" + Date.now();
+			if (nameInput != null) {
+				const name = nameInput && nameInput.trim() ? nameInput.trim() : "名称なし";
 
-			// 山データ登録
-			mountains[key] = {
-				name: name,
-				lat: e.latlng.lat,
-				lon: e.latlng.lng,
-				h: terrainElev
-			};
+				// 一意キー
+				const key = "user_" + Date.now();
 
-			// プルダウンに追加
-			const sel = document.getElementById('mountain');
-			const opt = document.createElement("option");
-			opt.value = key;
-			opt.textContent = name;
-			sel.appendChild(opt);
+				// 山データ登録
+				mountains[key] = {
+					name: name,
+					lat: e.latlng.lat,
+					lon: e.latlng.lng,
+					h: terrainElev
+				};
 
-			// 自動で選択
-			sel.value = key;
+				// プルダウンに追加
+				const sel = document.getElementById('mountain');
+				const opt = document.createElement("option");
+				opt.value = key;
+				opt.textContent = name;
+				sel.appendChild(opt);
 
-			// ★ 追加：選択直後にマーカー表示
-			mt = mountains[key];
-			updateMountainMarker(map, mt);
-			map.setView([mt.lat, mt.lon], CONSTANTS.MAP.INITIAL_ZOOM);
+				// 自動で選択
+				sel.value = key;
 
-			Utils.showInfo(`山を登録しました: ${name}`);
+				// ★ 追加：選択直後にマーカー表示
+				mt = mountains[key];
+				updateMountainMarker(map, mt);
+				map.setView([mt.lat, mt.lon], CONSTANTS.MAP.INITIAL_ZOOM);
 
-			// 登録フェーズ終了（詳細検索は行わない）
+				Utils.showInfo(`山を登録しました: ${name}`);
+
+				// 登録フェーズ終了（詳細検索は行わない）
+			}
 			return;
 		}
 
