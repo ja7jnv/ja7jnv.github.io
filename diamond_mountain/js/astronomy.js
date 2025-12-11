@@ -177,142 +177,218 @@ Date.prototype.getDOY = function() {
  * @param {number} lon - 経度
  * @param {Date} localDate - 地方時
  * @param {number} tzOffsetHours - タイムゾーンオフセット
- * @returns {Object} sunRise: 日の出時刻, sunSet: 日の入り時刻, azRize: 日の出方向, azSet: 日の入り方向 (時刻はDateオブジェクト)
+ * @returns {Object} sunRise: 日の出時刻, sunSet: 日の入り時刻, azRise: 日の出方向, azSet: 日の入り方向 (時刻はDateオブジェクト)
  */
 function sunRiseSet(lat, lon, localDate, tzOffsetHours) {
     // ----------------------------------------------------
-    // 定数と単位変換のヘルパー関数
+    // 定数と単位変換
     // ----------------------------------------------------
-
-    const SUN_ZENITH_ANGLE = 90.8333; // 日の出/日の入りを定義する天頂角（大気差を考慮）
-    const RAD = Math.PI / 180; // 度からラジアンへの変換係数
+    const SUN_ZENITH_ANGLE = 90.8333; // 日の出/日の入りを定義する天頂角
+    const RAD = Math.PI / 180;
+    const msInDay = 86400000;
+    const J2000_MS = new Date('2000-01-01T12:00:00.000Z').getTime();
 
     const degToRad = (deg) => deg * RAD;
     const radToDeg = (rad) => rad / RAD;
 
     // ----------------------------------------------------
-    // 1. ユリウス日と世紀の計算
+    // 1. 日付の処理とユリウス世紀 (T) の計算
     // ----------------------------------------------------
-    // UTCでの日の出/日の入りが起こると思われる日の正午（12時00分00秒）のユリウス日を基準とする
+    // UTCでの日の出/日の入りが起こると思われる日の正午（12時00分00秒）を基準とする
     const dateUTC = new Date(localDate.getTime() - tzOffsetHours * 3600000); // 地方時からUTCに変換
     dateUTC.setUTCHours(12, 0, 0, 0); // その日の正午UTCに設定
 
-    const msInDay = 86400000;
-    const J2000_MS = new Date('2000-01-01T12:00:00.000Z').getTime();
-
-    // 2000年1月1日正午(J2000.0)からの日数を計算
     const daysFrom2000 = (dateUTC.getTime() - J2000_MS) / msInDay;
-
-    // 世紀単位での日数
-    const T = daysFrom2000 / 36525.0;
+    const T = daysFrom2000 / 36525.0; // 世紀単位
 
     // ----------------------------------------------------
-    // 2. 太陽の基本パラメータの計算 (Meeusのアルゴリズムを簡略化)
+    // 2. 太陽の基本パラメータの計算
     // ----------------------------------------------------
-
-    // 太陽の平均近点角 (Mean anomaly of the Sun)
     let M = (357.5291 + 0.98560028 * daysFrom2000) % 360;
-    if (M < 0) M += 360; // 0〜360度の範囲に調整
+    if (M < 0) M += 360;
 
-    // 太陽の平均経度 (Mean longitude of the Sun)
     let L = (280.459 + 0.98564736 * daysFrom2000) % 360;
     if (L < 0) L += 360;
 
-    // ----------------------------------------------------
-    // 3. 太陽の真経度と赤緯の計算
-    // ----------------------------------------------------
-
-    // 軌道離心率の補正 (Equation of the center)
     const C = (1.9148 * Math.sin(degToRad(M)) + 0.0200 * Math.sin(degToRad(2 * M)) + 0.0003 * Math.sin(degToRad(3 * M)));
-
-    // 太陽の真経度 (True longitude of the Sun)
     const Lambda = L + C;
-
-    // 地球の傾き（黄道の傾き、Obliquity of the Ecliptic）
     const epsilon = 23.439 - 0.00000036 * daysFrom2000;
 
     // 太陽の赤緯 (Declination of the Sun)
     const decRad = Math.asin(Math.sin(degToRad(epsilon)) * Math.sin(degToRad(Lambda)));
-    const Dec = radToDeg(decRad);
+    // const Dec = radToDeg(decRad); // デバッグ用
 
     // ----------------------------------------------------
-    // 4. 時角と均時差の計算
+    // 3. 均時差 (EOT) の計算
     // ----------------------------------------------------
-    const latRad = degToRad(lat);
-    const decRadAbs = Math.abs(decRad);
-
-    // 日の出/日の入りが存在するためのチェック (極夜や白夜の判定)
-    if (latRad >= 0 && latRad + decRadAbs > degToRad(90 - SUN_ZENITH_ANGLE) || // 北半球の白夜
-        latRad < 0 && -latRad + decRadAbs > degToRad(90 - SUN_ZENITH_ANGLE)) { // 南半球の白夜
-        // 日の入りも日の出もない（白夜）
-        return { sunRise: null, sunSet: null, azRize: null, azSet: null };
-    }
-    if (latRad >= 0 && latRad - decRadAbs < degToRad(-90 + SUN_ZENITH_ANGLE) || // 北半球の極夜
-        latRad < 0 && -latRad - decRadAbs < degToRad(-90 + SUN_ZENITH_ANGLE)) { // 南半球の極夜
-        // 日の出も日の入りもない（極夜）
-        return { sunRise: null, sunSet: null, azRize: null, azSet: null };
-    }
-
-    // 日の出/日の入り時の時角 (Hour Angle, H)
-    // cos(H) = (cos(z) - sin(lat) * sin(Dec)) / (cos(lat) * cos(Dec))
-    const cosH = (Math.cos(degToRad(SUN_ZENITH_ANGLE)) - Math.sin(latRad) * Math.sin(decRad)) / (Math.cos(latRad) * Math.cos(decRad));
-
-    // 時角 H (日の出はマイナス、日の入りはプラス)
-    const Hrad = Math.acos(cosH);
-    const Hdeg = radToDeg(Hrad);
-
-    // 太陽の赤経 (Right Ascension, RA)
-    // 複雑な計算を省略し、日の出/日の入り計算に必要な均時差の近似値を計算
-
-    // 均時差 (Equation of Time, EOT) in minutes
-    // EOT = 4 * (Lon - RA) / 15.
     const Y = Math.tan(degToRad(epsilon / 2)) * Math.tan(degToRad(epsilon / 2));
     const eotMinutes = 4 * radToDeg(Y * Math.sin(2 * degToRad(L)) - 2 * 0.01671 * Math.sin(degToRad(M)) + 4 * 0.00014 * Math.sin(degToRad(2 * M)));
 
     // ----------------------------------------------------
-    // 5. 日の出/日の入り時刻の計算 (UTC)
+    // 4. 時角 (H) の計算と極夜/白夜の判定
+    // ----------------------------------------------------
+    const latRad = degToRad(lat);
+
+    const cosH_numerator = Math.cos(degToRad(SUN_ZENITH_ANGLE)) - Math.sin(latRad) * Math.sin(decRad);
+    const cosH_denominator = Math.cos(latRad) * Math.cos(decRad);
+    const cosH = cosH_numerator / cosH_denominator;
+
+    if (cosH > 1 || cosH < -1) {
+        // 白夜 (cosH > 1) または 極夜 (cosH < -1)
+        return { sunRise: null, sunSet: null, azRise: null, azSet: null };
+    }
+
+    const Hrad = Math.acos(cosH);
+    const Hdeg = radToDeg(Hrad);
+
+    // ----------------------------------------------------
+    // 5. 日の出/日の入り時刻の計算 (地方標準時 LST 基準)
     // ----------------------------------------------------
 
-    // 地方時での太陽の南中時刻 (Local Transit Time, TT) in minutes (0.0 to 1440.0)
-    const TTMinutes = 720 + 4 * lon - eotMinutes;
+    // 1. 地方平均時 (LMT) での太陽の南中時刻
+    const TT_LMT_Minutes = 720 - eotMinutes;
 
-    // UTCでの日の出時刻 (T_rise)
-    // T_rise (min) = TT - H/15 * 60 - 4 * Lon
-    const T_rise_UTC_Minutes = TTMinutes - Hdeg / 15 * 60 - 4 * lon;
-    const riseUTC_dayFraction = T_rise_UTC_Minutes / 1440; // 1日の中の割合 (0.0〜1.0)
+    // 2. LMTでの日の出/日の入り時刻
+    const HMinutes = Hdeg * 4;
+    const T_rise_LMT_Minutes = TT_LMT_Minutes - HMinutes;
+    const T_set_LMT_Minutes = TT_LMT_Minutes + HMinutes;
 
-    // UTCでの日の入り時刻 (T_set)
-    // T_set (min) = TT + H/15 * 60 - 4 * Lon
-    const T_set_UTC_Minutes = TTMinutes + Hdeg / 15 * 60 - 4 * lon;
-    const setUTC_dayFraction = T_set_UTC_Minutes / 1440; // 1日の中の割合 (0.0〜1.0)
+    // 3. 地方標準時 (LST) への変換
+    const standardMeridian = tzOffsetHours * 15; // 標準時子午線 (度)
+    const diff_LMT_LST = (lon - standardMeridian) * 4; // LMTとLSTの差（分）
 
+    const T_rise_LST_Minutes = T_rise_LMT_Minutes - diff_LMT_LST;
+    const T_set_LST_Minutes = T_set_LMT_Minutes - diff_LMT_LST;
+
+    // 地方標準時00:00:00のDateオブジェクトを作成
+    const localDateStart = new Date(localDate);
+    localDateStart.setHours(0, 0, 0, 0);
+
+    const sunRise = new Date(localDateStart.getTime() + T_rise_LST_Minutes * 60000);
+    const sunSet = new Date(localDateStart.getTime() + T_set_LST_Minutes * 60000);
+
+	// ----------------------------------------------------
+    // 6. 方位角 (Azimuth, Az) の計算と代入の修正
     // ----------------------------------------------------
-    // 6. 最終結果の導出 (Dateオブジェクトへの変換と方位計算)
-    // ----------------------------------------------------
 
-    // 日の出/日の入り時刻 (地方時) のDateオブジェクトを作成
-    const sunRise = new Date(dateUTC.getTime() + riseUTC_dayFraction * msInDay + tzOffsetHours * 3600000);
-    const sunSet = new Date(dateUTC.getTime() + setUTC_dayFraction * msInDay + tzOffsetHours * 3600000);
+    // cosAz をconst で定義
+    const cosAz = (Math.sin(decRad) - Math.sin(latRad) * Math.cos(degToRad(SUN_ZENITH_ANGLE))) / 
+                  (Math.cos(latRad) * Math.sin(degToRad(SUN_ZENITH_ANGLE)));
+    
+    // 基本方位角 (Base Azimuth): arccos(cosAz) は 0度から180度の範囲を返す
+    const baseAzDeg = radToDeg(Math.acos(cosAz)); 
 
-    // 方位角 (Azimuth, Az) の計算
-    // cos(Az) = (sin(Dec) - sin(lat) * cos(z)) / (cos(lat) * sin(z))
+    let azRise, azSet;
 
-    // 日の出方位 (Azimuth Rise)
-    // 日の出の天頂角 z = SUN_ZENITH_ANGLE
-    const cosAzRise = (Math.sin(decRad) - Math.sin(latRad) * Math.cos(degToRad(SUN_ZENITH_ANGLE))) /
-                      (Math.cos(latRad) * Math.sin(degToRad(SUN_ZENITH_ANGLE)));
+    // 北半球 (緯度 > 0) の場合
+    if (lat >= 0) {
+        azRise = baseAzDeg;
+        azSet = (360 - baseAzDeg) % 360;
+    }
 
-    let azRize = radToDeg(Math.acos(cosAzRise)); // 0〜180度
-    azRize = (lat >= 0) ? (360 - azRize) % 360 : azRize; // 北半球(lat>=0)では360-Az、南半球ではAz
+	// 南半球 (緯度 < 0) の場合
+	else {
+        azRise = (360 - baseAzDeg) % 360;
+        azSet = baseAzDeg;
+    }
+    
+    return {sunRise, sunSet, azRise: azRise, azSet};
+}
 
-    // 日の入り方位 (Azimuth Set)
-    const cosAzSet = (Math.sin(decRad) - Math.sin(latRad) * Math.cos(degToRad(SUN_ZENITH_ANGLE))) /
-                     (Math.cos(latRad) * Math.sin(degToRad(SUN_ZENITH_ANGLE)));
+/**
+ * Dateオブジェクトから指定のフォーマットの文字列を生成する関数
+ * @param {Date} date - Dateオブジェクト
+ * @returns {string} 'YYYY/MM/DD, HH:mm' 形式の文字列
+ */
+function formatDateTime(date) {
+    // オプションを設定
+    const optionsDate = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    };
+    const optionsTime = {
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23' // 24時間表示を強制
+    };
 
-    let azSet = radToDeg(Math.acos(cosAzSet)); // 0〜180度
-    azSet = (lat >= 0) ? azSet : (360 - azSet) % 360; // 北半球(lat>=0)ではAz、南半球では360-Az
+    // 地方時形式（'ja-JP'）で日付を取得
+    const datePart = date.toLocaleDateString('ja-JP', optionsDate);
 
-    // 結果を返す
-    return {sunRise, sunSet, azRize, azSet};
+    // 地方時形式で時刻を取得
+    const timePart = date.toLocaleTimeString('ja-JP', optionsTime);
+
+    // 日付の区切りを '年/月/日' に修正 (例: '2025/12/11' にするため)
+    // toLocaleDateString('ja-JP') は '2025/12/11' の形式を返す
+
+    return `${datePart}, ${timePart}`;
+}
+
+/**
+ * Dateオブジェクトから 'YYYY/MM/DD, HH:mm' 形式の文字列を生成する関数
+ * @param {Date} dateObj - sunRise または sunSet の Date オブジェクト
+ * @returns {string} フォーマットされた文字列
+ */
+function formatSunTime(dateObj) {
+    if (!dateObj) {
+        return "N/A"; // 白夜/極夜などで null の場合の対応
+    }
+
+    // toLocaleDateString() は、ロケール 'ja-JP' を指定すると、
+    // YYYY/MM/DD 形式を返すため、手動でのゼロ埋めは不要
+    const datePart = dateObj.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+
+    // 時刻のオプション。24時間表示 (h23) を強制
+    const timePart = dateObj.toLocaleTimeString('ja-JP', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+    });
+
+    return `${datePart}, ${timePart}`;
+}
+
+/**
+ * Dateオブジェクトから日付部分のみを 'YYYY/MM/DD' 形式で取得する関数
+ * @param {Date} dateObj - Date オブジェクト
+ */
+function formatDatePart(dateObj) {
+    if (!dateObj) return "N/A";
+
+    // YYYY/MM/DD 形式で日付文字列を生成するオプション
+    const optionsDate = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    };
+
+    // 'ja-JP'ロケールで生成（例: 2025/12/11）
+    return dateObj.toLocaleDateString('ja-JP', optionsDate);
+}
+
+/**
+ * Dateオブジェクトから時刻部分のみを 'HH:mm' 形式で取得する関数
+ * @param {Date} dateObj - sunRise または sunSet の Date オブジェクト
+ * @returns {string} 'HH:mm' 形式の文字列
+ */
+function formatTimePart(dateObj) {
+    if (!dateObj) {
+        return "N/A"; // 白夜/極夜などで null の場合の対応
+    }
+
+    // 時刻のオプションを設定
+    const optionsTime = {
+        hour: '2-digit',      // 2桁の時 (例: 06, 13)
+        minute: '2-digit',    // 2桁の分 (例: 08, 30)
+        hourCycle: 'h23'      // 24時間表示（00〜23時）を強制
+    };
+
+    // 'ja-JP'ロケールで時刻文字列を生成（例: 06:48, 13:00）
+    return dateObj.toLocaleTimeString('ja-JP', optionsTime);
 }
 

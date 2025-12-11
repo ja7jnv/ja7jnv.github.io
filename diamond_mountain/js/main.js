@@ -209,20 +209,26 @@ window.addEventListener('load', function() {
 
 		const key = this.value;
 
-		//  （！！山を選択もしくは追加！！） をクリック → 追加モードに戻る
-		if (!key) {
-			Utils.showInfo("新しい山を追加するには、地図をクリックしてください。");
-			return;
+		
+		if (key) {
+			// 既存の山選択
+			const mt = mountains[key];
+			if (mt) {
+				const view = getViewCenterFromMountain(mt);
+				map.flyTo([view.lat, view.lon], view.zoom, { duration: 1.2 });
+				updateMountainMarker(map, mt);
+				Utils.showInfo(`山を選択しました: ${mt.name}`);
+			}
+			else {
+			}
 		}
 
-		// 既存の山選択
-		const mt = mountains[key];
-		if (!mt) return;
+		else {		//  （！！山を選択もしくは追加！！） をクリック → 追加モードに戻る
+			if (window.mtMarker) window.mtMarker.remove();
+			Utils.showInfo("新しい山を追加するには、地図をクリックしてください。");
+		}
 
-		const view = getViewCenterFromMountain(mt);
-		map.flyTo([view.lat, view.lon], view.zoom, { duration: 1.2 });
-
-		updateMountainMarker(map, mt);
+		return;
 	});
 
 
@@ -236,9 +242,9 @@ window.addEventListener('load', function() {
 		// ------------------------------------------------------------
 		if (!mt) {
 			Utils.showInfo("クリック地点を山として登録します。標高取得中…");
-
 			const elevData = await getElevation(e.latlng.lat, e.latlng.lng);
 			const terrainElev = elevData.elevation;
+			//Utils.showInfo("クリック地点を山として登録します。標高取得完了。");
 
 			// 名称入力
 			const nameInput = prompt(
@@ -277,6 +283,9 @@ window.addEventListener('load', function() {
 				Utils.showInfo(`山を登録しました: ${name}`);
 
 				// 登録フェーズ終了（詳細検索は行わない）
+			}
+			else {
+				Utils.showInfo(`山を選択、もしくは登録してください。`);
 			}
 			return;
 		}
@@ -338,7 +347,12 @@ window.addEventListener('load', function() {
             s += '\n指定期間内で条件を満たす日はありません';
         }
 
-        Utils.showInfo(`総観測高度 ${Utils.formatNumber(totalObsElev, 1)}m で計算`);
+		const so = sunRiseSet(lat, lon, startDate, CONSTANTS.JST_OFFSET);
+		const rdate = formatDatePart(so.sunRise);
+		const rtime = formatTimePart(so.sunRise);
+		const stime = formatTimePart(so.sunSet);
+
+        Utils.showInfo(`観測地情報　高度:${Utils.formatNumber(totalObsElev, 1)}m　観測日: ${rdate}　日出: ${rtime}　日没: ${stime}　日出方角: ${so.azRise.toFixed(1)}°　日没方角: ${so.azSet.toFixed(1)}°`);
 
         L.popup()
             .setLatLng(e.latlng)
