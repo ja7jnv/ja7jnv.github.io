@@ -32,8 +32,7 @@ window.addEventListener('load', function() {
     function getInputValues() {
         return {
             startDateStr: document.getElementById('startDate').value,
-            years: '2',
-            // years: Number(document.getElementById('years').value),
+            years: Number(document.getElementById('years').value),
             azTol: Number(document.getElementById('azTol').value),
             elTol: Number(document.getElementById('elTol').value),
             groundInput: Number(document.getElementById('obsElev').value) || 0,
