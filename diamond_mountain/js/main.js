@@ -360,6 +360,30 @@ window.addEventListener('load', function() {
             .openOn(map);
     });
 
+	// ===== イベントリスナー: 期間ボタン =====
+    // 期間ボタンがクリックされたときの処理
+    // research.js の 処理を参考にperiod buttonが押されたときの処理を記述する
+    // 期間内の可視日を一覧表示する新しいwindowを開く
+    // 表示内容は、日付、日出時刻、日没時刻、日出方位、日没方位、備考(朝日/夕日)など
+    // 表示形式は表形式で見やすくする
+    // 表示するデータは、現在の地図中心点(lat, lon)、選択中の山、開始日、年数、方位許容度、仰角許容度、観測高度を使用する
+    // 期間内の各日の太陽位置を計算し、山とのアライメントをチェックする
+    // 条件を満たす日があれば、その日の情報を表に追加する
+    // 条件を満たす日がなければ、その旨を表示する
+    // 新しいwindowには閉じるボタンとCSV出力も設置する
+    // CSV出力は、表示中のデータをCSV形式でダウンロードできるようにする
+    // UIのメッセージは CONSTANTS.UI.PERIODS_MESSAGE を使用する
+    // Utils.showInfo で処理開始と完了のメッセージを表示する
+    // 必要に応じてヘルパー関数を定義して処理を分割する
+    // 非同期処理が必要な場合は async/await を使用する
+    // エラーハンドリングも適切に行う
+    document.getElementById('period').addEventListener('click', () => {
+        Utils.showInfo(CONSTANTS.UI.PERIODS_MESSAGE);
+        //
+        showPeriodsDialog();
+    }); 
+    	
+
     // ===== イベントリスナー: クリアボタン =====
     document.getElementById('clear').addEventListener('click', () => {
         window.visLayer.clearLayers();
