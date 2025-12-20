@@ -85,5 +85,21 @@ const Utils = {
      */
     formatNumber(value, decimals = 2) {
         return value.toFixed(decimals);
+    },
+    
+    /**
+     * 山から東にkmEastずらした座標を返す
+     * @param {Object} mt - 山のデータ
+     * @param {number} kmEast - 東方向の距離(km) デフォルト40km
+     * @returns {Object} lat, lon, zoom
+     */
+    getViewCenterFromMountain(mt, kmEast = 40) {
+        const lonOffset = kmEast / (CONSTANTS.KM_PER_DEGREE_LAT * Math.cos(deg2rad(mt.lat)));
+        const centerLon = mt.lon + lonOffset;
+        return {
+            lat: mt.lat,
+            lon: centerLon,
+            zoom: CONSTANTS.MAP.INITIAL_ZOOM
+        };
     }
 };
