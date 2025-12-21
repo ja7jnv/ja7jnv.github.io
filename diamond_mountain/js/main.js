@@ -195,7 +195,7 @@ window.addEventListener('load', function() {
     document.getElementById('mountain').addEventListener('change', function() {
         const key = this.value;
 
-        if (key) {
+        if (key && key !== "") {
             // 既存の山選択
             const mt = mountains[key];
             if (mt) {
