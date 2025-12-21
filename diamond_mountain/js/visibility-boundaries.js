@@ -1,4 +1,4 @@
-// 可視領域の境界線を描画する機能(正しい実装)
+// 可視領域の境界線を描画する
 
 /**
  * 指定期間内の太陽方位の範囲を計算
@@ -278,8 +278,8 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
                 [mountainPoint, [sunriseSouthPoint.lat, sunriseSouthPoint.lon], extendedPoint],
                 {
                     color: '#007bff',
-                    weight: 3,
-                    opacity: 0.8
+                    weight: 2,
+                    opacity: 0.7
                 }
             ).addTo(window.visibilityBoundaries);
             
@@ -315,8 +315,8 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
                 {
                     color: '#007bff',
                     weight: 2,
-                    opacity: 0.6,
-                    dashArray: '5, 5'
+                    opacity: 0.7
+                    // dashArray: '5, 5'
                 }
             ).addTo(window.visibilityBoundaries);
             
