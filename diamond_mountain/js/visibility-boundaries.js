@@ -257,68 +257,73 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
     
     // === 朝日の範囲(西側から山を見る) ===
     if (sunRange.sunrise.min < 360 && sunRange.sunrise.max > 0) {
-        console.log('朝日の南限を計算中... (太陽が南寄りに昇る=冬至付近)', sunRange.sunrise.min);
+        console.log('【朝日の南限】を計算中... (冬至、太陽方位=南寄り)', sunRange.sunrise.min);
         
-        // 朝日の南限: 太陽が最も南に昇る日(方位角が最小=冬至)
         const sunriseSouthPoint = findObservationPoint(mt, sunRange.sunrise.min + 180, 100, obsElev);
         
         if (sunriseSouthPoint) {
-            console.log('朝日の南限地点:', sunriseSouthPoint);
+            console.log('→ 朝日の南限地点(冬至):', sunriseSouthPoint);
             
-            // 線を延長: 100kmまで
+            const bearingFromPoint = sunriseSouthPoint.bearing;
+            const oppositeDirection = (bearingFromPoint + 180) % 360;
+            
             const extendedPoint = calculatePointFromMountain(
-                mt.lat, mt.lon, 
-                sunRange.sunrise.min + 180, 
-                100
+                sunriseSouthPoint.lat, 
+                sunriseSouthPoint.lon, 
+                oppositeDirection, 
+                50
             );
             
             const sunriseSouthLine = L.polyline(
-                [mountainPoint, extendedPoint],
+                [mountainPoint, [sunriseSouthPoint.lat, sunriseSouthPoint.lon], extendedPoint],
                 {
                     color: '#007bff',
-                    weight: 2,
-                    opacity: 0.7
+                    weight: 3,
+                    opacity: 0.8
                 }
             ).addTo(window.visibilityBoundaries);
             
             sunriseSouthLine.bindPopup(
-                `<strong>🌅 朝日の南限</strong><br>` +
-                `太陽方位: ${sunRange.sunrise.min.toFixed(1)}° (冬至付近)<br>` +
-                `最適観測地点: 山から ${sunriseSouthPoint.distance.toFixed(1)} km<br>` +
+                `<strong>🌅 朝日の南限 (冬至)</strong><br>` +
+                `太陽方位: ${sunRange.sunrise.min.toFixed(1)}°<br>` +
+                `観測地点: 山から ${sunriseSouthPoint.distance.toFixed(1)} km 西南西<br>` +
                 `山の仰角: ${sunriseSouthPoint.elevation.toFixed(2)}°`
             );
         } else {
             console.error('朝日の南限地点が見つかりませんでした');
         }
         
-        console.log('朝日の北限を計算中... (太陽が北寄りに昇る=夏至付近)', sunRange.sunrise.max);
+        console.log('【朝日の北限】を計算中... (夏至、太陽方位=北寄り)', sunRange.sunrise.max);
         
-        // 朝日の北限: 太陽が最も北に昇る日(方位角が最大=夏至)
         const sunriseNorthPoint = findObservationPoint(mt, sunRange.sunrise.max + 180, 100, obsElev);
         
         if (sunriseNorthPoint) {
-            console.log('朝日の北限地点:', sunriseNorthPoint);
+            console.log('→ 朝日の北限地点(夏至):', sunriseNorthPoint);
             
-            // 線を延長: 100kmまで
+            const bearingFromPoint = sunriseNorthPoint.bearing;
+            const oppositeDirection = (bearingFromPoint + 180) % 360;
+            
             const extendedPoint = calculatePointFromMountain(
-                mt.lat, mt.lon, 
-                sunRange.sunrise.max + 180, 
-                100
+                sunriseNorthPoint.lat, 
+                sunriseNorthPoint.lon, 
+                oppositeDirection, 
+                50
             );
             
             const sunriseNorthLine = L.polyline(
-                [mountainPoint, extendedPoint],
+                [mountainPoint, [sunriseNorthPoint.lat, sunriseNorthPoint.lon], extendedPoint],
                 {
                     color: '#007bff',
                     weight: 2,
-                    opacity: 0.7
+                    opacity: 0.6,
+                    dashArray: '5, 5'
                 }
             ).addTo(window.visibilityBoundaries);
             
             sunriseNorthLine.bindPopup(
-                `<strong>🌅 朝日の北限</strong><br>` +
-                `太陽方位: ${sunRange.sunrise.max.toFixed(1)}° (夏至付近)<br>` +
-                `最適観測地点: 山から ${sunriseNorthPoint.distance.toFixed(1)} km<br>` +
+                `<strong>🌅 朝日の北限 (夏至)</strong><br>` +
+                `太陽方位: ${sunRange.sunrise.max.toFixed(1)}°<br>` +
+                `観測地点: 山から ${sunriseNorthPoint.distance.toFixed(1)} km 西北西<br>` +
                 `山の仰角: ${sunriseNorthPoint.elevation.toFixed(2)}°`
             );
         } else {
