@@ -77,7 +77,7 @@ function drawSunDirectionLines(map, lat, lon, azRise, azSet, lineLength = 30) {
                 white-space: nowrap;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             ">🌅 日の出 ${azRise.toFixed(1)}°</div>`,
-            iconSize: [100, 30],
+            iconSize: [110, 30],
             iconAnchor: [50, 15]
         })
     }).addTo(window.sunDirectionLines);
@@ -108,7 +108,7 @@ function drawSunDirectionLines(map, lat, lon, azRise, azSet, lineLength = 30) {
                 white-space: nowrap;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             ">🌇 日の入り ${azSet.toFixed(1)}°</div>`,
-            iconSize: [100, 30],
+            iconSize: [120, 30],
             iconAnchor: [50, 15]
         })
     }).addTo(window.sunDirectionLines);

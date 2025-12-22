@@ -241,14 +241,14 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
                     html: `<div style="
                         background: rgba(255, 136, 0, 0.9);
                         color: white;
-                        padding: 4px 8px;
+                        padding: 4px 6px;
                         border-radius: 4px;
                         font-size: 11px;
                         font-weight: bold;
                         white-space: nowrap;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.3);
                     ">🌇 夕日の範囲</div>`,
-                    iconSize: [80, 20],
+                    iconSize: [85, 20],		// 文字列の収まりが悪かったので 80, 20 -> 85, 20 に変更
                     iconAnchor: [40, 10]
                 })
             }).addTo(window.visibilityBoundaries);
@@ -341,14 +341,14 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
                     html: `<div style="
                         background: rgba(0, 123, 255, 0.9);
                         color: white;
-                        padding: 4px 8px;
+                        padding: 4px 6px;
                         border-radius: 4px;
                         font-size: 11px;
                         font-weight: bold;
                         white-space: nowrap;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.3);
                     ">🌅 朝日の範囲</div>`,
-                    iconSize: [80, 20],
+                    iconSize: [85, 20],		// 文字列の収まりが悪かったので 80, 20 -> 85, 20 に変更
                     iconAnchor: [40, 10]
                 })
             }).addTo(window.visibilityBoundaries);
