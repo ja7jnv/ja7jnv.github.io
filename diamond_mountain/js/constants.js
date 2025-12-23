@@ -33,7 +33,8 @@ const CONSTANTS = {
             lon: 139.24
         },
         INITIAL_ZOOM: 10,
-        MOUNTAIN_VIEW_OFFSET_KM: 40, // 山から東方向のオフセット(km)
+        // MOUNTAIN_VIEW_OFFSET_KM: 40, // 山から東方向のオフセット(km)
+        MOUNTAIN_VIEW_OFFSET_KM: 0, // 山から東方向のオフセット(km)
         VISIBILITY_CIRCLE_RADIUS_M: 500, // 可視地点の円の半径(m)
     },
     

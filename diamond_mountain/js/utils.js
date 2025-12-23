@@ -93,7 +93,7 @@ const Utils = {
      * @param {number} kmEast - 東方向の距離(km) デフォルト40km
      * @returns {Object} lat, lon, zoom
      */
-    getViewCenterFromMountain(mt, kmEast = 40) {
+    getViewCenterFromMountain(mt, kmEast = CONSTANTS.MAP.MOUNTAIN_VIEW_OFFSET_KM) {
         const lonOffset = kmEast / (CONSTANTS.KM_PER_DEGREE_LAT * Math.cos(deg2rad(mt.lat)));
         const centerLon = mt.lon + lonOffset;
         return {
