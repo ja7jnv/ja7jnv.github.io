@@ -102,6 +102,11 @@ button {
 
 #period:hover { background: #28a745; }
 
+/* period の文字列は1行で表示 */
+.green-btn {
+    white-space: nowrap;	 /* 文字を改行させない設定 */
+}
+
 #clear {
     background: #eee;
     color: #666;
