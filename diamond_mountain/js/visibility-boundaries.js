@@ -232,10 +232,7 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
         
         // ラベル
         if (sunsetNorthPoint && sunsetSouthPoint) {
-            const midLat = (sunsetNorthPoint.lat + sunsetSouthPoint.lat) / 2;
-            const midLon = (sunsetNorthPoint.lon + sunsetSouthPoint.lon) / 2;
-            
-            L.marker([midLat, midLon], {
+            L.marker([mt.lat, mt.lon + CONSTANTS.LABEL.DISPLAY_OFFSET], {
                 icon: L.divIcon({
                     className: 'visibility-label',
                     html: `<div style="
@@ -332,10 +329,7 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
         
         // ラベル
         if (sunriseNorthPoint && sunriseSouthPoint) {
-            const midLat = (sunriseNorthPoint.lat + sunriseSouthPoint.lat) / 2;
-            const midLon = (sunriseNorthPoint.lon + sunriseSouthPoint.lon) / 2;
-            
-            L.marker([midLat, midLon], {
+            L.marker([mt.lat, mt.lon - CONSTANTS.LABEL.DISPLAY_OFFSET], {
                 icon: L.divIcon({
                     className: 'visibility-label',
                     html: `<div style="

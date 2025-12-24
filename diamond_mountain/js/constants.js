@@ -34,9 +34,13 @@ const CONSTANTS = {
         },
         INITIAL_ZOOM: 10,
         // MOUNTAIN_VIEW_OFFSET_KM: 40, // 山から東方向のオフセット(km)
-        MOUNTAIN_VIEW_OFFSET_KM: 0, // 山から東方向のオフセット(km)
+        MOUNTAIN_VIEW_OFFSET_KM: 0,		// 山から東方向のオフセット(km)
         VISIBILITY_CIRCLE_RADIUS_M: 500, // 可視地点の円の半径(m)
     },
+
+	LABEL: {
+		DISPLAY_OFFSET: 0.2	// 表示位置の山頂からの経度オフセット
+	},
     
     // ===== 標高設定 =====
     ELEVATION: {
