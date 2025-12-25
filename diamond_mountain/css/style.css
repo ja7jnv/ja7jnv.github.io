@@ -18,10 +18,11 @@ html, body {
 /* フローティング・コントロールパネル */
 #top {
     position: absolute;
-    top: 20px;
-    left: 20px;
+    top: 12px;		/* 上からの位置:上の隙間 */
+    left: 45px;		/* 左からの位置:左の隙間 */
     z-index: 1000;
-    width: 340px;
+    /* width: 340px; */
+    width: 300px;
     max-height: calc(100vh - 40px);
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px); /* 背景ぼかし */
@@ -47,7 +48,7 @@ html, body {
 #controls {
     padding: 15px;
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 12px;
 }
 
@@ -104,6 +105,7 @@ button {
 
 /* period の文字列は1行で表示 */
 .green-btn {
+	grid-column: span 2;
     white-space: nowrap;	 /* 文字を改行させない設定 */
 }
 
@@ -126,8 +128,46 @@ button {
     overflow-y: auto;
 }
 
-/* 📱 スマホ最適化（600px 以下） */
+
+/* Leaflet ポップアップの洗練 */
+.leaflet-popup-content-wrapper {
+    border-radius: 12px !important;
+    padding: 5px !important;
+}
+
+/* マップのカーソルを十字（クロスヘア）に強制する */
+.leaflet-container {
+    cursor: crosshair !important;
+}
+
+/* 横並びにするための設定 */
+.input-row {				/* "対象の山" ... "可視範囲" */
+    display: flex;
+    align-items: flex-end; /* ラベルのテキストがあるため、下揃えにして高さを合わせる */
+    gap: 8px;
+    grid-column: span 2;
+}
+
+.input-row label {
+    flex: 1; /* セレクトボックス側を可変（残りの幅を埋める）にする */
+    margin-bottom: 0;
+}
+
+/* ボタンの調整 */
+#run {
+    white-space: nowrap; /* 文字列を改行させない */
+    width: auto;         /* 幅をコンテンツ（文字）に合わせる */
+    flex-shrink: 0;      /* ボタンが圧縮されないようにする */
+    padding: 10px 12px;  /* セレクトボックスと高さを合わせるための微調整 */
+    height: 40px;        /* selectと同じ高さに固定 */
+}
+
+/* スマホ対応の微調整 */
 @media (max-width: 600px) {
+    .input-row {
+        grid-column: span 2; /* スマホ時は横幅いっぱい使う */
+    }
+
     #top {
         top: 0;
         left: 0;
@@ -151,13 +191,6 @@ button {
     }
 }
 
-/* Leaflet ポップアップの洗練 */
-.leaflet-popup-content-wrapper {
-    border-radius: 12px !important;
-    padding: 5px !important;
-}
-
-/* マップのカーソルを十字（クロスヘア）に強制する */
-.leaflet-container {
-    cursor: crosshair !important;
+.message-area {
+  white-space: pre-wrap; /* 改行コードを反映し、枠端で折り返す */
 }

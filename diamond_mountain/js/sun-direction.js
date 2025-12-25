@@ -41,7 +41,7 @@ function calculateEndPoint(lat, lon, bearing, distanceKm) {
  * @param {number} azSet - 日の入り方位(度)
  * @param {number} lineLength - 線の長さ(km) デフォルト30km
  */
-function drawSunDirectionLines(map, lat, lon, azRise, azSet, lineLength = 30) {
+function drawSunDirectionLines(map, lat, lon, so, lineLength = 30) {
     // 既存の線を削除
     if (window.sunDirectionLines) {
         window.sunDirectionLines.clearLayers();
@@ -52,7 +52,7 @@ function drawSunDirectionLines(map, lat, lon, azRise, azSet, lineLength = 30) {
     const startPoint = [lat, lon];
     
     // 日の出方向の線(青色)
-    const sunriseEnd = calculateEndPoint(lat, lon, azRise, lineLength);
+    const sunriseEnd = calculateEndPoint(lat, lon, so.azRise, lineLength);
     const sunriseLine = L.polyline(
         [startPoint, [sunriseEnd.lat, sunriseEnd.lon]],
         {
@@ -76,14 +76,14 @@ function drawSunDirectionLines(map, lat, lon, azRise, azSet, lineLength = 30) {
                 font-weight: bold;
                 white-space: nowrap;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            ">🌅 日の出 ${azRise.toFixed(1)}°</div>`,
+            ">🌅 日の出 ${so.azRise.toFixed(1)}°<br>${formatDateTime(so.sunRise)}</div>`,
             iconSize: [110, 30],
             iconAnchor: [50, 15]
         })
     }).addTo(window.sunDirectionLines);
     
     // 日の入り方向の線(オレンジ色)
-    const sunsetEnd = calculateEndPoint(lat, lon, azSet, lineLength);
+    const sunsetEnd = calculateEndPoint(lat, lon, so.azSet, lineLength);
     const sunsetLine = L.polyline(
         [startPoint, [sunsetEnd.lat, sunsetEnd.lon]],
         {
@@ -107,15 +107,15 @@ function drawSunDirectionLines(map, lat, lon, azRise, azSet, lineLength = 30) {
                 font-weight: bold;
                 white-space: nowrap;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            ">🌇 日の入り ${azSet.toFixed(1)}°</div>`,
-            iconSize: [120, 30],
+            ">🌇 日の入 ${so.azSet.toFixed(1)}°<br>${formatDateTime(so.sunSet)}</div>`,
+            iconSize: [110, 30],
             iconAnchor: [50, 15]
         })
     }).addTo(window.sunDirectionLines);
     
     // ポップアップを追加
-    sunriseLine.bindPopup(`<strong>🌅 日の出方向</strong><br>方位: ${azRise.toFixed(1)}°`);
-    sunsetLine.bindPopup(`<strong>🌇 日の入り方向</strong><br>方位: ${azSet.toFixed(1)}°`);
+    sunriseLine.bindPopup(`<strong>🌅 日の出方向</strong><br>方位: ${so.azRise.toFixed(1)}°`);
+    sunsetLine.bindPopup(`<strong>🌇 日の入り方向</strong><br>方位: ${so.azSet.toFixed(1)}°`);
 }
 
 /**

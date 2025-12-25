@@ -17,15 +17,18 @@
     <div id="top">
 		<p> 山の頂上に太陽が昇る/沈む日を探索します </p>
 		<div id="controls">
-			<label>対象の山
-				<select id="mountain">
-					<option value="">-- 山を選択／追加 --</option>
-				</select>
-			</label>
+			<div class="input-row">
+				<label>対象の山
+					<select id="mountain">
+						<option value="">! -- 山の選択／登録 -- !</option>
+					</select>
+				</label>
+				<button id="run">可視範囲</button>
+			</div>
 
-			<button id="run">可視範囲</button>
-
-			<div style="display: flex; gap: 8px; grid-column: span 2;"> <label style="flex: 2;">観測開始日
+			<!-- <div style="display: flex; gap: 8px; grid-column: span 2;"> -->
+			<div class="input-row">
+				<label style="flex: 2;">観測開始日
 					<input type="date" id="startDate">
 				</label>
 				<label style="flex: 1;">探索期間
@@ -40,14 +43,16 @@
 
 			<button class="green-btn" id="period">ダイヤモンド発生日を表示</button>
 
-			<div style="display: flex; gap: 8px; grid-column: span 2;"> <label>高度(m) <input id="obsElev" type="number" value="0"></label>
+			<!-- <div style="display: flex; gap: 8px; grid-column: span 2;"> -->
+			<div class="input-row">
+				<label>高度(m) <input id="obsElev" type="number" value="0"></label>
 				<label>方位許容(°) <input id="azTol" type="number" value="0.5" step="0.1"></label>
 				<label>仰角許容(°) <input id="elTol" type="number" value="0.5" step="0.1"></label>
 			</div>
 
 			<button id="clear">クリア</button>
 		</div>
-		<div id="info">座標をクリックするとその地点の可視判定・山方向・山頂仰角を表示します。最初に山を選択するか登録してください。</div>
+		<div class="message-area" id="info">地図をクリックするとその地点の可視判定・山方向・山頂仰角を表示します。<br>最初に山を選択するか登録してください。</div>
     </div>
     <div id="map"></div>
 

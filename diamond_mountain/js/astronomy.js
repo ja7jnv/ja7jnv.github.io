@@ -322,7 +322,7 @@ function formatDateTime(date) {
     // 日付の区切りを '年/月/日' に修正 (例: '2025/12/11' にするため)
     // toLocaleDateString('ja-JP') は '2025/12/11' の形式を返す
 
-    return `${datePart}, ${timePart}`;
+    return `${datePart} ${timePart}`;
 }
 
 /**

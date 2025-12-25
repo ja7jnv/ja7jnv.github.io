@@ -164,7 +164,10 @@ window.addEventListener('load', function() {
         }
 
         const mt = getSelectedMountain(inputs.selectedKey);
-        if (!mt) return;
+        if (!mt) {
+            alert(CONSTANTS.UI.ERROR_NO_MOUNTAIN);
+            return;
+        }
 
         const startDate = new Date(inputs.startDateStr);
 
@@ -183,7 +186,7 @@ window.addEventListener('load', function() {
             drawVisibilityBoundaries(map, mt, startDate, inputs.years, totalObsElev);
             
             Utils.showInfo(
-                `可視範囲を表示しました - ${mt.name} (${inputs.years}年間、観測標高 ${totalObsElev.toFixed(0)}m)`
+                `可視範囲を表示しました - ${mt.name}`
             );
         } catch (e) {
             console.error(e);
@@ -202,7 +205,7 @@ window.addEventListener('load', function() {
                 const view = Utils.getViewCenterFromMountain(mt);
                 map.flyTo([view.lat, view.lon], view.zoom, { duration: 1.2 });
                 updateMountainMarker(map, mt);
-                Utils.showInfo(`山を選択しました: ${mt.name}`);
+                Utils.showInfo(`山を選択しました: ${mt.name}\n観測地点をクリックしてください。`);
             }
         } else {
             // 山を選択もしくは追加 → 追加モードに戻る
@@ -327,7 +330,7 @@ window.addEventListener('load', function() {
         const stime = formatTimePart(so.sunSet);
 
         // 日の出・日の入り方向の線を描画
-        drawSunDirectionLines(map, e.latlng.lat, e.latlng.lng, so.azRise, so.azSet);
+        drawSunDirectionLines(map, e.latlng.lat, e.latlng.lng, so);
 
         Utils.showInfo(`観測地情報　高度:${Utils.formatNumber(totalObsElev, 1)}m　観測日: ${rdate}　日出: ${rtime}　日没: ${stime}　日出方角: ${so.azRise.toFixed(1)}°　日没方角: ${so.azSet.toFixed(1)}°`);
 
