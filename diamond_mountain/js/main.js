@@ -186,7 +186,7 @@ window.addEventListener('load', function() {
             drawVisibilityBoundaries(map, mt, startDate, inputs.years, totalObsElev);
             
             Utils.showInfo(
-                `可視範囲を表示しました - ${mt.name}`
+                `可視範囲を表示しました - ${mt.name}\n観測地点をクリックしてください。`
             );
         } catch (e) {
             console.error(e);
@@ -382,8 +382,8 @@ window.addEventListener('load', function() {
     document.getElementById('clear').addEventListener('click', () => {
         window.visLayer.clearLayers();
         window.sampleLayer.clearLayers();
-        clearSunDirectionLines(); // 日の出・日の入り線もクリア
-        clearVisibilityBoundaries(); // 可視範囲の境界線もクリア
+        clearSunDirectionLines(); // 日の出・日の入り線をクリア
+        clearVisibilityBoundaries(); // 可視範囲の境界線をクリア
         Utils.showInfo(CONSTANTS.UI.CLEAR_MESSAGE);
     });
 });

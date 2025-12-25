@@ -115,6 +115,12 @@ button {
     padding: 8px;
 }
 
+/* clear の文字列は1行で表示 */
+.clear-btn {
+	grid-column: span 2;
+    white-space: nowrap;	 /* 文字を改行させない設定 */
+}
+
 #clear:hover { background: #ddd; }
 
 /* インフォメーション */
