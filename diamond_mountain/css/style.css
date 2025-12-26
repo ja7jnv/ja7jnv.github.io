@@ -104,7 +104,7 @@ button {
 #period:hover { background: #28a745; }
 
 /* period の文字列は1行で表示 */
-.green-btn {
+.full-btn {
 	grid-column: span 2;
     white-space: nowrap;	 /* 文字を改行させない設定 */
 }
@@ -115,10 +115,25 @@ button {
     padding: 8px;
 }
 
+#redisplay {
+    background: #ff8800;
+    color: white;
+    padding: 8px;
+}
+
 /* clear の文字列は1行で表示 */
-.clear-btn {
-	grid-column: span 2;
+.half-btn {
+	grid-column: span 1;
     white-space: nowrap;	 /* 文字を改行させない設定 */
+}
+
+/* 高度、方位、仰角の入力域は小さくする */
+.input-sub {
+    display: flex;
+    align-items: flex-end; /* ラベルのテキストがあるため、下揃えにして高さを合わせる */
+    gap: 8px;
+    grid-column: span 2;
+    height: 50%;        /* selectと同じ高さに固定 */
 }
 
 #clear:hover { background: #ddd; }
@@ -144,6 +159,14 @@ button {
 /* マップのカーソルを十字（クロスヘア）に強制する */
 .leaflet-container {
     cursor: crosshair !important;
+}
+
+/* 横並びにするための設定 */
+.obs-row {				/* 観測地の緯度,経度,標高表示 */
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    grid-column: span 2;
 }
 
 /* 横並びにするための設定 */
@@ -192,7 +215,7 @@ button {
         padding: 10px;
     }
 
-    #run, #period, #clear, #top p, #info {
+    #run, #period, #top p, #info {
         grid-column: span 2; /* 主要ボタンとテキストは横いっぱい */
     }
 }

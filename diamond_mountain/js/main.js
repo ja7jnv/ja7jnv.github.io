@@ -35,7 +35,7 @@ window.addEventListener('load', function() {
             years: Number(document.getElementById('years').value),
             azTol: Number(document.getElementById('azTol').value),
             elTol: Number(document.getElementById('elTol').value),
-            groundInput: Number(document.getElementById('obsElev').value) || 0,
+            groundInput: Number(document.getElementById('obsAlt').value) || 0,
             selectedKey: document.getElementById('mountain').value
         };
     }
@@ -60,6 +60,14 @@ window.addEventListener('load', function() {
             )
             .openPopup();
     }
+
+	// === ヘルパー関数：可視範囲と探索ラインを消去 ===
+	function eraseLine() {
+        window.visLayer.clearLayers();
+        window.sampleLayer.clearLayers();
+        clearSunDirectionLines(); // 日の出・日の入り線をクリア
+        clearVisibilityBoundaries(); // 可視範囲の境界線をクリア
+	}
 
     // ===== ヘルパー関数: 詳細な太陽-山アライメント検索(クリック時用) =====
     function findDetailedAlignment(lat, lon, startDate, years, azTol, elTol, ba) {
@@ -198,6 +206,8 @@ window.addEventListener('load', function() {
     document.getElementById('mountain').addEventListener('change', function() {
         const key = this.value;
 
+		eraseLine();
+
         if (key && key !== "") {
             // 既存の山選択
             const mt = mountains[key];
@@ -210,6 +220,7 @@ window.addEventListener('load', function() {
         } else {
             // 山を選択もしくは追加 → 追加モードに戻る
             if (window.mtMarker) window.mtMarker.remove();
+			temporaryParameters.marker.removeFrom(map);
             Utils.showInfo("新しい山を追加するには、地図をクリックしてください。");
         }
     });
@@ -330,11 +341,16 @@ window.addEventListener('load', function() {
         const stime = formatTimePart(so.sunSet);
 
         // 日の出・日の入り方向の線を描画
+		temporaryParameters.setTemporaryParameters(map, e.latlng.lat, e.latlng.lng, so);
         drawSunDirectionLines(map, e.latlng.lat, e.latlng.lng, so);
 
         Utils.showInfo(`観測地情報　高度:${Utils.formatNumber(totalObsElev, 1)}m　観測日: ${rdate}　日出: ${rtime}　日没: ${stime}　日出方角: ${so.azRise.toFixed(1)}°　日没方角: ${so.azSet.toFixed(1)}°`);
 
-        L.popup()
+		document.getElementById('obsLat').value = Number(lat).toFixed(2);
+		document.getElementById('obsLon').value = Number(lon).toFixed(2);
+		document.getElementById('obsEle').value = terrainElev;
+
+        temporaryParameters.marker = L.popup()
             .setLatLng(e.latlng)
             .setContent(`<pre style="font-size:13px;line-height:1.4">${s}</pre>`)
             .openOn(map);
@@ -380,10 +396,35 @@ window.addEventListener('load', function() {
 
     // ===== イベントリスナー: クリアボタン =====
     document.getElementById('clear').addEventListener('click', () => {
-        window.visLayer.clearLayers();
-        window.sampleLayer.clearLayers();
-        clearSunDirectionLines(); // 日の出・日の入り線をクリア
-        clearVisibilityBoundaries(); // 可視範囲の境界線をクリア
+		eraseLine();
+		temporaryParameters.marker.removeFrom(map);
         Utils.showInfo(CONSTANTS.UI.CLEAR_MESSAGE);
     });
+
+    // ===== イベントリスナー: 再表示ボタン =====
+    document.getElementById('redisplay').addEventListener('click', () => {
+		temporaryParameters.marker.openOn(map);
+        drawSunDirectionLines(temporaryParameters.map, temporaryParameters.lat, temporaryParameters.lon, temporaryParameters.sun);
+    });
 });
+
+
+// 再表示用パラメタ退避域
+class temporaryParameters {
+	static map;
+	static lat;
+	static lon;
+	static sun;
+	static marker;
+
+	static setTemporaryParameters(mp, lt, ln, so) {
+		this.map = mp;
+		this.lat = lt;
+		this.lon = ln;
+		this.sun = so;
+	}
+
+	static getTempolaryParameters() {
+		return(this.map, this.lat, this.lon, this.sun);
+	}
+}
