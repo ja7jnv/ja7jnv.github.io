@@ -404,27 +404,48 @@ window.addEventListener('load', function() {
     // ===== イベントリスナー: 再表示ボタン =====
     document.getElementById('redisplay').addEventListener('click', () => {
 		temporaryParameters.marker.openOn(map);
-        drawSunDirectionLines(temporaryParameters.map, temporaryParameters.lat, temporaryParameters.lon, temporaryParameters.sun);
+        drawSunDirectionLines(temporaryParameters.getTemporaryMap(),temporaryParameters.getTemporaryLat(),temporaryParameters.getTemporaryLon(),temporaryParameters.getTemporarySun());
     });
-});
 
 
 // 再表示用パラメタ退避域
-class temporaryParameters {
-	static map;
-	static lat;
-	static lon;
-	static sun;
-	static marker;
+	class temporaryParameters {
+		static map;
+		static lat;
+		static lon;
+		static sun;
+		static marker;
 
-	static setTemporaryParameters(mp, lt, ln, so) {
-		this.map = mp;
-		this.lat = lt;
-		this.lon = ln;
-		this.sun = so;
+		static setTemporaryParameters(mp, lt, ln, so) {
+			this.map = mp;
+			this.lat = lt;
+			this.lon = ln;
+			this.sun = so;
+		}
+
+		static getTemporaryMap() {
+			return this.map;
+		}
+
+		static getTemporaryLat() {
+			return this.lat;
+		}
+
+		static getTemporaryLon() {
+			return this.lon;
+		}
+
+		static getTemporarySun() {
+			return this.sun;
+		}
+
+		static setMarker(mk) {
+			this.marker = mk;
+		}
+
+		static getMarker() {
+			return(this.marker);
+		}
 	}
 
-	static getTempolaryParameters() {
-		return(this.map, this.lat, this.lon, this.sun);
-	}
-}
+});

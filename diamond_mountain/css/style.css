@@ -114,12 +114,14 @@ button {
     color: #666;
     padding: 8px;
 }
+#clear:hover { background: #ddd; }
 
 #redisplay {
     background: #ff8800;
     color: white;
     padding: 8px;
 }
+#redisplay:hover { background: #ff5500; }
 
 /* clear の文字列は1行で表示 */
 .half-btn {
@@ -127,16 +129,6 @@ button {
     white-space: nowrap;	 /* 文字を改行させない設定 */
 }
 
-/* 高度、方位、仰角の入力域は小さくする */
-.input-sub {
-    display: flex;
-    align-items: flex-end; /* ラベルのテキストがあるため、下揃えにして高さを合わせる */
-    gap: 8px;
-    grid-column: span 2;
-    height: 50%;        /* selectと同じ高さに固定 */
-}
-
-#clear:hover { background: #ddd; }
 
 /* インフォメーション */
 #info {
@@ -162,14 +154,6 @@ button {
 }
 
 /* 横並びにするための設定 */
-.obs-row {				/* 観測地の緯度,経度,標高表示 */
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    grid-column: span 2;
-}
-
-/* 横並びにするための設定 */
 .input-row {				/* "対象の山" ... "可視範囲" */
     display: flex;
     align-items: flex-end; /* ラベルのテキストがあるため、下揃えにして高さを合わせる */
@@ -180,6 +164,22 @@ button {
 .input-row label {
     flex: 1; /* セレクトボックス側を可変（残りの幅を埋める）にする */
     margin-bottom: 0;
+}
+
+/* 現在無効：横並びにするための設定 */
+.obs-row {				/* 観測地の緯度、経度、標高表示 */
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    grid-column: span 2;
+}
+
+/* 現在無効：高度、方位、仰角の入力域は小さくする */
+.sub-row {				/* 観測者痴情高、方位許容、仰角許容 */
+    display: flex;
+    align-items: flex-end; /* ラベルのテキストがあるため、下揃えにして高さを合わせる */
+    gap: 8px;
+    grid-column: span 2;
 }
 
 /* ボタンの調整 */
