@@ -407,7 +407,6 @@ window.addEventListener('load', function() {
         drawSunDirectionLines(temporaryParameters.getTemporaryMap(),temporaryParameters.getTemporaryLat(),temporaryParameters.getTemporaryLon(),temporaryParameters.getTemporarySun());
     });
 
-
 // 再表示用パラメタ退避域
 	class temporaryParameters {
 		static map;
@@ -448,4 +447,22 @@ window.addEventListener('load', function() {
 		}
 	}
 
+});
+
+// ===== イベントリスナー: パネルの折りたたみ機能 =====
+document.addEventListener('DOMContentLoaded', function() {
+	const topPanel = document.getElementById('top');
+	const panelHeader = document.getElementById('panel-header');
+	// const toggleBtn = document.getElementById('panel-toggle-btn'); // ボタン単体で反応させたい場合
+
+	// ヘッダー全体をクリックしたら折りたたみを切り替える
+	// (ボタンだけをクリック対象にしたい場合は panelHeader を toggleBtn に変える)
+	if (panelHeader && topPanel) {
+		panelHeader.addEventListener('click', function() {
+			// 'collapsed' クラスをトグル（付け外し）する
+			topPanel.classList.toggle('collapsed');
+		});
+	} else {
+		console.error("要素が見つかりません: #panel-header または #top が HTML に存在するか確認してください。");
+	}
 });

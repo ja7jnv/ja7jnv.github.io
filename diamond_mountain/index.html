@@ -15,49 +15,58 @@
 
 <body>
     <div id="top">
-		<p> 山の頂上に太陽が昇る/沈む日を探索します </p>
-		<div id="controls">
-			<div class="input-row">
-				<label>対象の山
-					<select id="mountain">
-						<option value=""> --- 山の選択／登録 --- </option>
-					</select>
-				</label>
-				<button id="run">可視範囲</button>
-			</div>
-
-			<div class="input-row">
-				<label style="flex: 2;">観測開始日
-					<input type="date" id="startDate">
-				</label>
-				<label style="flex: 1;">探索期間
-					<select id="years">
-						<option value="1">1年</option>
-						<option value="2" selected>2年</option>
-						<option value="3">3年</option>
-						<option value="5">5年</option>
-					</select>
-				</label>
-			</div>
-
-			<button class="full-btn" id="period">ダイヤモンド発生日を表示</button>
-
-			<div class="input-row">
-				<label>観測地の緯度(°) <input disabled id="obsLat" type="number" value="0"></label>
-				<label>観測地の経度(°) <input disabled id="obsLon" type="number" value="0"></label>
-				<label>観測地の標高(m) <input disabled id="obsEle" type="number" value="0"></label>
-			</div>
-			<div class="input-row">
-				<label>観測者地上高(m) <input id="obsAlt" type="number" value="0"></label>
-				<label>方位許容(°) <input id="azTol" type="number" value="0.5" step="0.1"></label>
-				<label>仰角許容(°) <input id="elTol" type="number" value="0.5" step="0.1"></label>
-			</div>
-
-			<button class="half-btn" id="clear">クリア</button>
-			<button class="half-btn" id="redisplay">再表示</button>
+		<div id="panel-header">
+			<span class="panel-title">山の頂上に太陽が昇る/沈む日を探索</span>
+			<button id="panel-toggle-btn" aria-label="パネルを折りたたむ">▲</button>
 		</div>
+
+		<div id="panel-content">
+			<div id="controls">
+				<div class="input-row">
+					<label>対象の山
+						<select id="mountain">
+							<option value=""> --- 山の選択／登録 --- </option>
+						</select>
+					</label>
+					<button id="run">可視範囲</button>
+				</div>
+
+				<div class="input-row">
+					<label style="flex: 2;">観測開始日
+						<input type="date" id="startDate">
+					</label>
+					<label style="flex: 1;">探索期間
+						<select id="years">
+							<option value="1">1年</option>
+							<option value="2" selected>2年</option>
+							<option value="3">3年</option>
+							<option value="5">5年</option>
+						</select>
+					</label>
+				</div>
+
+				<div class="input-row">
+					<label>観測者地上高(m) <input id="obsAlt" type="number" value="0"></label>
+					<label>方位許容(°) <input id="azTol" type="number" value="0.5" step="0.1"></label>
+					<label>仰角許容(°) <input id="elTol" type="number" value="0.5" step="0.1"></label>
+				</div>
+
+				<button class="full-btn" id="period">ダイヤモンド発生日を表示</button>
+
+				<div class="input-row">
+					<label>観測地の緯度(°) <input disabled id="obsLat" type="number" value="0"></label>
+					<label>観測地の経度(°) <input disabled id="obsLon" type="number" value="0"></label>
+					<label>観測地の標高(m) <input disabled id="obsEle" type="number" value="0"></label>
+				</div>
+
+				<button class="half-btn" id="clear">クリア</button>
+				<button class="half-btn" id="redisplay">再表示</button>
+			</div>
+		</div>
+
 		<div class="message-area" id="info">地図をクリックするとその地点の可視判定・山方向・山頂仰角を表示します。<br><b>最初に山を選択するか登録してください。</b></div>
     </div>
+
     <div id="map"></div>
 
     <!-- Leaflet JS -->

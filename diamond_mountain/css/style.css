@@ -21,7 +21,6 @@ html, body {
     top: 12px;		/* 上からの位置:上の隙間 */
     left: 45px;		/* 左からの位置:左の隙間 */
     z-index: 1000;
-    /* width: 340px; */
     width: 300px;
     max-height: calc(100vh - 40px);
     background: rgba(255, 255, 255, 0.85);
@@ -34,14 +33,55 @@ html, body {
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* 説明文 */
-#top p {
-    margin: 0;
-    padding: 15px 15px 10px;
+/* ヘッダーコンテナ：横並び配置 */
+#panel-header {
+    display: flex;
+    justify-content: space-between; /* 両端揃え */
+    align-items: center;	/* 上下中央揃え */
+    
+    padding: 5px 15px;		/* オリジナルは padding: 15px 15px 10px; */
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    cursor: pointer;		/* ヘッダー全体をクリック可能に見せる */
+}
+
+/* タイトルテキスト */
+.panel-title {
     font-size: 13px;
     font-weight: bold;
     color: #555;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    margin: 0;
+}
+
+/* 折りたたみボタン（アイコン） */
+#panel-toggle-btn {
+    background: none; /* 背景色なし */
+    border: none; /*枠線なし */
+    color: #999;
+    font-size: 14px;
+    padding: 8px; /* タップ領域を広げる */
+    height: auto; /* 共通ボタン設定の高さ(40px)を上書き */
+    width: auto;
+    cursor: pointer;
+    transition: transform 0.3s ease; /* 回転アニメーション */
+    display: flex; /* 中央揃え */
+    align-items: center;
+    justify-content: center;
+}
+
+/* パネルが折りたたまれた時の状態 */
+/* 1. コンテンツを非表示にする */
+#top.collapsed #panel-content {
+    display: none;
+}
+
+/* 2. ボタンのアイコンを回転させる（▲ を ▼ に見せる） */
+#top.collapsed #panel-toggle-btn {
+    transform: rotate(180deg);
+}
+
+/* 3. 折りたたみ時はヘッダーの境界線を消してスッキリさせる */
+#top.collapsed #panel-header {
+    border-bottom: none;
 }
 
 /* コントロールエリア */
@@ -75,7 +115,7 @@ input, select {
 
 input:focus, select:focus {
     outline: none;
-    border-color: #007AFF; /* Appleスタイルのブルー */
+    border-color: #007AFF; /* ブルー */
 }
 
 /* ボタンのデザイン */
@@ -175,9 +215,9 @@ button {
 }
 
 /* 現在無効：高度、方位、仰角の入力域は小さくする */
-.sub-row {				/* 観測者痴情高、方位許容、仰角許容 */
+.sub-row {					/* 観測者痴情高、方位許容、仰角許容 */
     display: flex;
-    align-items: flex-end; /* ラベルのテキストがあるため、下揃えにして高さを合わせる */
+    align-items: flex-end;	/* ラベルのテキストがあるため、下揃えにして高さを合わせる */
     gap: 8px;
     grid-column: span 2;
 }
@@ -191,35 +231,51 @@ button {
     height: 40px;        /* selectと同じ高さに固定 */
 }
 
-/* スマホ対応の微調整 */
-@media (max-width: 600px) {
-    .input-row {
-        grid-column: span 2; /* スマホ時は横幅いっぱい使う */
-    }
+.message-area {
+  white-space: pre-wrap; /* 改行コードを反映し、枠端で折り返す */
+}
 
+
+/* スマホ表示の微調整 */
+/* 📱 スマホ最適化（600px 以下） */
+@media (max-width: 600px) {
     #top {
         top: 0;
         left: 0;
         width: 100%;
         border-radius: 0;
-        max-height: 45vh; /* 画面の上半分弱を占める */
+        max-height: 55vh;	/* パネル全体の最大高さを画面の55%に制限 */
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;	/* 親ははみ出しを隠す */
     }
-    
-    #map {
-        top: 0; /* 地図は全画面だが、パネルに隠れる部分は考慮 */
+
+    /* 新しく追加したラッパー要素をスクロール可能にする */
+    #panel-content {
+        overflow-y: auto;					/* 👈 中身が多い場合にここでスクロールさせる */
+        -webkit-overflow-scrolling: touch;	/* iOSでのスクロールを滑らかにする */
+        flex: 1;							/* 残りの高さを埋める */
     }
 
     #controls {
-        grid-template-columns: 1fr 1fr; /* スマホでは2列にして高さを抑える */
+        /* スマホでは2列にして高さを抑える設定は維持 */
+        grid-template-columns: 1fr 1fr;
         gap: 8px;
         padding: 10px;
+        display: grid;		/* FlexboxではなくGridに戻してレイアウトを維持 */
     }
 
-    #run, #period, #top p, #info {
-        grid-column: span 2; /* 主要ボタンとテキストは横いっぱい */
+    /* 各ボタンの横幅調整 */
+    #run, #period, .panel-title, #info {
+        grid-column: span 2;
     }
-}
+    /* 各ボタンの横幅調整 */
+    #clear, #redisplay {
+        grid-column: span 1;
+    }
 
-.message-area {
-  white-space: pre-wrap; /* 改行コードを反映し、枠端で折り返す */
+
+    .input-row, .flex-container {
+        grid-column: span 2;	/* スマホでは横並びを解除して1列にする */
+    }
 }
