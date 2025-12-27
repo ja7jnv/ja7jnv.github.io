@@ -238,11 +238,11 @@ window.addEventListener('load', function() {
 
             // 名称入力
             const nameInput = prompt(
-                `山の名前を入力してください(省略可)\n\n座標: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}\n標高: ${terrainElev}m`
+                `この地点を山として登録します。\n山の名前を入力してください(省略時: 「私の好きな山」)。\n\n座標: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}\n標高: ${terrainElev}m`
             );
 
             if (nameInput != null) {
-                const name = nameInput && nameInput.trim() ? nameInput.trim() : "名称なし";
+                const name = nameInput && nameInput.trim() ? nameInput.trim() : "私の好きな山";
 
                 // 一意キー
                 const key = "user_" + Date.now();
@@ -310,9 +310,7 @@ window.addEventListener('load', function() {
         const { firstMatch, lastMatch, bestMatch } = alignRes;
 
         // ポップアップ内容作成
-        let s = `観測地: 北緯 ${lat}°, 東経 ${lon}°\n`;
-        s += `地形標高: ${Utils.formatNumber(terrainElev, 1)}m\n`;
-        s += `山の方位: ${Utils.formatNumber(ba.bearing, 3)}°  仰角: ${Utils.formatNumber(ba.elev, 3)}°\n`;
+        let s = `山の方位: ${Utils.formatNumber(ba.bearing, 3)}°  仰角: ${Utils.formatNumber(ba.elev, 3)}°\n`;
 
         if (firstMatch) {
             let modeLabelHtml = firstMatch?.mode === 'sunrise'
@@ -326,11 +324,11 @@ window.addEventListener('load', function() {
             s += `\n直近のダイヤモンド${modeLabelHtml}発生期間\n`;
             s += `BEGIN: ${Utils.formatDate(firstMatch.dt)}\n`;
             s += `END:   ${Utils.formatDate(lastMatch.dt)}\n`;
-            s += `期間: ${days}日間(連続)\n\n`;
+            s += `期間:  ${days}日間\n\n`;
 
-            s += `ベストマッチ(この期間内)\n`;
-            s += `MATCH: ${Utils.formatDate(bestMatch.dt)} ${modeLabelHtml}\n`;
-            s += `  太陽方位 ${Utils.formatNumber(bestMatch.pos.az)}°  高度 ${Utils.formatNumber(bestMatch.pos.alt)}°`;
+            s += `ベストマッチ(上記期間内)\n`;
+            s += `${Utils.formatDate(bestMatch.dt)} ${modeLabelHtml}\n`;
+            s += `太陽方位 ${Utils.formatNumber(bestMatch.pos.az)}°  高度 ${Utils.formatNumber(bestMatch.pos.alt)}°`;
         } else {
             s += '\n指定期間内で条件を満たす日はありません';
         }
@@ -344,7 +342,7 @@ window.addEventListener('load', function() {
 		temporaryParameters.setTemporaryParameters(map, e.latlng.lat, e.latlng.lng, so);
         drawSunDirectionLines(map, e.latlng.lat, e.latlng.lng, so);
 
-        Utils.showInfo(`観測地情報　高度:${Utils.formatNumber(totalObsElev, 1)}m　観測日: ${rdate}　日出: ${rtime}　日没: ${stime}　日出方角: ${so.azRise.toFixed(1)}°　日没方角: ${so.azSet.toFixed(1)}°`);
+        Utils.showInfo(`観測地  緯度: ${lat}°  経度: ${lon}°\n高度(標高${Utils.formatNumber(terrainElev, 1)}m+地上高${inputs.groundInput}m): ${Utils.formatNumber(totalObsElev, 1)}m`);
 
 		document.getElementById('obsLat').value = Number(lat).toFixed(2);
 		document.getElementById('obsLon').value = Number(lon).toFixed(2);

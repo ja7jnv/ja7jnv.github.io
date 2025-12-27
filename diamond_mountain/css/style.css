@@ -38,8 +38,7 @@ html, body {
     display: flex;
     justify-content: space-between; /* 両端揃え */
     align-items: center;	/* 上下中央揃え */
-    
-    padding: 5px 15px;		/* オリジナルは padding: 15px 15px 10px; */
+    padding: 8px 15px;		/* オリジナルは padding: 上15px 左右15px (下10pxi); */
     border-bottom: 1px solid rgba(0,0,0,0.05);
     cursor: pointer;		/* ヘッダー全体をクリック可能に見せる */
 }
