@@ -342,7 +342,9 @@ window.addEventListener('load', function() {
 		temporaryParameters.setTemporaryParameters(map, e.latlng.lat, e.latlng.lng, so);
         drawSunDirectionLines(map, e.latlng.lat, e.latlng.lng, so);
 
-        Utils.showInfo(`観測地  緯度: ${lat}°  経度: ${lon}°\n高度(標高${Utils.formatNumber(terrainElev, 1)}m+地上高${inputs.groundInput}m): ${Utils.formatNumber(totalObsElev, 1)}m`);
+        const info = `観測地  緯度: ${lat}°  経度: ${lon}°\n高度(標高${Utils.formatNumber(terrainElev, 1)}m+地上高${inputs.groundInput}m): ${Utils.formatNumber(totalObsElev, 1)}m`;
+		temporaryParameters.setInfo(info);
+        Utils.showInfo(info);
 
 		document.getElementById('obsLat').value = Number(lat).toFixed(2);
 		document.getElementById('obsLon').value = Number(lon).toFixed(2);
@@ -403,6 +405,7 @@ window.addEventListener('load', function() {
     document.getElementById('redisplay').addEventListener('click', () => {
 		temporaryParameters.marker.openOn(map);
         drawSunDirectionLines(temporaryParameters.getTemporaryMap(),temporaryParameters.getTemporaryLat(),temporaryParameters.getTemporaryLon(),temporaryParameters.getTemporarySun());
+        Utils.showInfo(temporaryParameters.getInfo());
     });
 
 // 再表示用パラメタ退避域
@@ -412,6 +415,7 @@ window.addEventListener('load', function() {
 		static lon;
 		static sun;
 		static marker;
+		static info;
 
 		static setTemporaryParameters(mp, lt, ln, so) {
 			this.map = mp;
@@ -442,6 +446,14 @@ window.addEventListener('load', function() {
 
 		static getMarker() {
 			return(this.marker);
+		}
+
+		static setInfo(inf) {
+			this.info = inf;
+		}
+
+		static getInfo() {
+			return(this.info);
 		}
 	}
 

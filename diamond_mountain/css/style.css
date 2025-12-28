@@ -243,7 +243,7 @@ button {
         left: 0;
         width: 100%;
         border-radius: 0;
-        max-height: 55vh;	/* パネル全体の最大高さを画面の55%に制限 */
+        max-height: 55vh;	/* パネル全体の最大高さを画面の50%に制限 */
         display: flex;
         flex-direction: column;
         overflow: hidden;	/* 親ははみ出しを隠す */
@@ -257,7 +257,7 @@ button {
     }
 
     #controls {
-        /* スマホでは2列にして高さを抑える設定は維持 */
+        /* スマホでは2列にして高さを抑える */
         grid-template-columns: 1fr 1fr;
         gap: 8px;
         padding: 10px;
@@ -272,7 +272,6 @@ button {
     #clear, #redisplay {
         grid-column: span 1;
     }
-
 
     .input-row, .flex-container {
         grid-column: span 2;	/* スマホでは横並びを解除して1列にする */
