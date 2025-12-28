@@ -35,7 +35,7 @@ window.addEventListener('load', function() {
             years: Number(document.getElementById('years').value),
             azTol: Number(document.getElementById('azTol').value),
             elTol: Number(document.getElementById('elTol').value),
-            groundInput: Number(document.getElementById('obsElev').value) || 0,
+            groundInput: Number(document.getElementById('obsAlt').value) || 0,
             selectedKey: document.getElementById('mountain').value
         };
     }
@@ -60,6 +60,14 @@ window.addEventListener('load', function() {
             )
             .openPopup();
     }
+
+	// === ヘルパー関数：可視範囲と探索ラインを消去 ===
+	function eraseLine() {
+        window.visLayer.clearLayers();
+        window.sampleLayer.clearLayers();
+        clearSunDirectionLines(); // 日の出・日の入り線をクリア
+        clearVisibilityBoundaries(); // 可視範囲の境界線をクリア
+	}
 
     // ===== ヘルパー関数: 詳細な太陽-山アライメント検索(クリック時用) =====
     function findDetailedAlignment(lat, lon, startDate, years, azTol, elTol, ba) {
@@ -164,7 +172,10 @@ window.addEventListener('load', function() {
         }
 
         const mt = getSelectedMountain(inputs.selectedKey);
-        if (!mt) return;
+        if (!mt) {
+            alert(CONSTANTS.UI.ERROR_NO_MOUNTAIN);
+            return;
+        }
 
         const startDate = new Date(inputs.startDateStr);
 
@@ -183,7 +194,7 @@ window.addEventListener('load', function() {
             drawVisibilityBoundaries(map, mt, startDate, inputs.years, totalObsElev);
             
             Utils.showInfo(
-                `可視範囲を表示しました - ${mt.name} (${inputs.years}年間、観測標高 ${totalObsElev.toFixed(0)}m)`
+                `可視範囲を表示しました - ${mt.name}\n観測地点をクリックしてください。`
             );
         } catch (e) {
             console.error(e);
@@ -195,6 +206,8 @@ window.addEventListener('load', function() {
     document.getElementById('mountain').addEventListener('change', function() {
         const key = this.value;
 
+		eraseLine();
+
         if (key && key !== "") {
             // 既存の山選択
             const mt = mountains[key];
@@ -202,11 +215,12 @@ window.addEventListener('load', function() {
                 const view = Utils.getViewCenterFromMountain(mt);
                 map.flyTo([view.lat, view.lon], view.zoom, { duration: 1.2 });
                 updateMountainMarker(map, mt);
-                Utils.showInfo(`山を選択しました: ${mt.name}`);
+                Utils.showInfo(`山を選択しました: ${mt.name}\n観測地点をクリックしてください。`);
             }
         } else {
             // 山を選択もしくは追加 → 追加モードに戻る
             if (window.mtMarker) window.mtMarker.remove();
+			temporaryParameters.marker.removeFrom(map);
             Utils.showInfo("新しい山を追加するには、地図をクリックしてください。");
         }
     });
@@ -224,11 +238,11 @@ window.addEventListener('load', function() {
 
             // 名称入力
             const nameInput = prompt(
-                `山の名前を入力してください(省略可)\n\n座標: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}\n標高: ${terrainElev}m`
+                `この地点を山として登録します。\n山の名前を入力してください(省略時: 「私の好きな山」)。\n\n座標: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}\n標高: ${terrainElev}m`
             );
 
             if (nameInput != null) {
-                const name = nameInput && nameInput.trim() ? nameInput.trim() : "名称なし";
+                const name = nameInput && nameInput.trim() ? nameInput.trim() : "私の好きな山";
 
                 // 一意キー
                 const key = "user_" + Date.now();
@@ -296,9 +310,7 @@ window.addEventListener('load', function() {
         const { firstMatch, lastMatch, bestMatch } = alignRes;
 
         // ポップアップ内容作成
-        let s = `観測地: 北緯 ${lat}°, 東経 ${lon}°\n`;
-        s += `地形標高: ${Utils.formatNumber(terrainElev, 1)}m\n`;
-        s += `山の方位: ${Utils.formatNumber(ba.bearing, 3)}°  仰角: ${Utils.formatNumber(ba.elev, 3)}°\n`;
+        let s = `山の方位: ${Utils.formatNumber(ba.bearing, 3)}°  仰角: ${Utils.formatNumber(ba.elev, 3)}°\n`;
 
         if (firstMatch) {
             let modeLabelHtml = firstMatch?.mode === 'sunrise'
@@ -312,11 +324,11 @@ window.addEventListener('load', function() {
             s += `\n直近のダイヤモンド${modeLabelHtml}発生期間\n`;
             s += `BEGIN: ${Utils.formatDate(firstMatch.dt)}\n`;
             s += `END:   ${Utils.formatDate(lastMatch.dt)}\n`;
-            s += `期間: ${days}日間(連続)\n\n`;
+            s += `期間:  ${days}日間\n\n`;
 
-            s += `ベストマッチ(この期間内)\n`;
-            s += `MATCH: ${Utils.formatDate(bestMatch.dt)} ${modeLabelHtml}\n`;
-            s += `  太陽方位 ${Utils.formatNumber(bestMatch.pos.az)}°  高度 ${Utils.formatNumber(bestMatch.pos.alt)}°`;
+            s += `ベストマッチ(上記期間内)\n`;
+            s += `${Utils.formatDate(bestMatch.dt)} ${modeLabelHtml}\n`;
+            s += `太陽方位 ${Utils.formatNumber(bestMatch.pos.az)}°  高度 ${Utils.formatNumber(bestMatch.pos.alt)}°`;
         } else {
             s += '\n指定期間内で条件を満たす日はありません';
         }
@@ -327,11 +339,18 @@ window.addEventListener('load', function() {
         const stime = formatTimePart(so.sunSet);
 
         // 日の出・日の入り方向の線を描画
-        drawSunDirectionLines(map, e.latlng.lat, e.latlng.lng, so.azRise, so.azSet);
+		temporaryParameters.setTemporaryParameters(map, e.latlng.lat, e.latlng.lng, so);
+        drawSunDirectionLines(map, e.latlng.lat, e.latlng.lng, so);
 
-        Utils.showInfo(`観測地情報　高度:${Utils.formatNumber(totalObsElev, 1)}m　観測日: ${rdate}　日出: ${rtime}　日没: ${stime}　日出方角: ${so.azRise.toFixed(1)}°　日没方角: ${so.azSet.toFixed(1)}°`);
+        const info = `観測地  緯度: ${lat}°  経度: ${lon}°\n高度(標高${Utils.formatNumber(terrainElev, 1)}m+地上高${inputs.groundInput}m): ${Utils.formatNumber(totalObsElev, 1)}m`;
+		temporaryParameters.setInfo(info);
+        Utils.showInfo(info);
 
-        L.popup()
+		document.getElementById('obsLat').value = Number(lat).toFixed(2);
+		document.getElementById('obsLon').value = Number(lon).toFixed(2);
+		document.getElementById('obsEle').value = terrainElev;
+
+        temporaryParameters.marker = L.popup()
             .setLatLng(e.latlng)
             .setContent(`<pre style="font-size:13px;line-height:1.4">${s}</pre>`)
             .openOn(map);
@@ -377,10 +396,83 @@ window.addEventListener('load', function() {
 
     // ===== イベントリスナー: クリアボタン =====
     document.getElementById('clear').addEventListener('click', () => {
-        window.visLayer.clearLayers();
-        window.sampleLayer.clearLayers();
-        clearSunDirectionLines(); // 日の出・日の入り線もクリア
-        clearVisibilityBoundaries(); // 可視範囲の境界線もクリア
+		eraseLine();
+		temporaryParameters.marker.removeFrom(map);
         Utils.showInfo(CONSTANTS.UI.CLEAR_MESSAGE);
     });
+
+    // ===== イベントリスナー: 再表示ボタン =====
+    document.getElementById('redisplay').addEventListener('click', () => {
+		temporaryParameters.marker.openOn(map);
+        drawSunDirectionLines(temporaryParameters.getTemporaryMap(),temporaryParameters.getTemporaryLat(),temporaryParameters.getTemporaryLon(),temporaryParameters.getTemporarySun());
+        Utils.showInfo(temporaryParameters.getInfo());
+    });
+
+// 再表示用パラメタ退避域
+	class temporaryParameters {
+		static map;
+		static lat;
+		static lon;
+		static sun;
+		static marker;
+		static info;
+
+		static setTemporaryParameters(mp, lt, ln, so) {
+			this.map = mp;
+			this.lat = lt;
+			this.lon = ln;
+			this.sun = so;
+		}
+
+		static getTemporaryMap() {
+			return this.map;
+		}
+
+		static getTemporaryLat() {
+			return this.lat;
+		}
+
+		static getTemporaryLon() {
+			return this.lon;
+		}
+
+		static getTemporarySun() {
+			return this.sun;
+		}
+
+		static setMarker(mk) {
+			this.marker = mk;
+		}
+
+		static getMarker() {
+			return(this.marker);
+		}
+
+		static setInfo(inf) {
+			this.info = inf;
+		}
+
+		static getInfo() {
+			return(this.info);
+		}
+	}
+
+});
+
+// ===== イベントリスナー: パネルの折りたたみ機能 =====
+document.addEventListener('DOMContentLoaded', function() {
+	const topPanel = document.getElementById('top');
+	const panelHeader = document.getElementById('panel-header');
+	// const toggleBtn = document.getElementById('panel-toggle-btn'); // ボタン単体で反応させたい場合
+
+	// ヘッダー全体をクリックしたら折りたたみを切り替える
+	// (ボタンだけをクリック対象にしたい場合は panelHeader を toggleBtn に変える)
+	if (panelHeader && topPanel) {
+		panelHeader.addEventListener('click', function() {
+			// 'collapsed' クラスをトグル（付け外し）する
+			topPanel.classList.toggle('collapsed');
+		});
+	} else {
+		console.error("要素が見つかりません: #panel-header または #top が HTML に存在するか確認してください。");
+	}
 });

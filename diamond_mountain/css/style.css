@@ -1,142 +1,279 @@
 /* 基本レイアウト */
-html,
-body,
-#map {
+html, body {
     height: 100%;
     margin: 0;
     padding: 0;
+    font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Meiryo", sans-serif;
+    color: #333;
 }
 
-body {
+#map {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: 1; /* 地図を最背面に */
+}
+
+/* フローティング・コントロールパネル */
+#top {
+    position: absolute;
+    top: 12px;		/* 上からの位置:上の隙間 */
+    left: 45px;		/* 左からの位置:左の隙間 */
+    z-index: 1000;
+    width: 300px;
+    max-height: calc(100vh - 40px);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px); /* 背景ぼかし */
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
-    font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* トップバー */
-#top {
-    padding: 10px;
-    background: #f3f3f3;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
-    z-index: 1000;
-}
-
-/* コントロール */
-#controls {
+/* ヘッダーコンテナ：横並び配置 */
+#panel-header {
     display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
+    justify-content: space-between; /* 両端揃え */
+    align-items: center;	/* 上下中央揃え */
+    padding: 8px 15px;		/* オリジナルは padding: 上15px 左右15px (下10pxi); */
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    cursor: pointer;		/* ヘッダー全体をクリック可能に見せる */
 }
 
-input,
-button,
-select {
-    padding: 6px 8px;
-	font-size: 14px;
-}
-
-/* マップ */
-#map {
-    flex: 1; /* 残りのスペースを埋める */
-    height: 100%;
-    min-height: 0;
-}
-
-/* 情報表示エリア */
-#info {
-    padding: 8px;
-    max-height: 220px;
-    overflow: auto;
+/* タイトルテキスト */
+.panel-title {
     font-size: 13px;
+    font-weight: bold;
+    color: #555;
+    margin: 0;
 }
 
-/* 凡例 */
-.legend {
-    background: white;
-    padding: 6px;
+/* 折りたたみボタン（アイコン） */
+#panel-toggle-btn {
+    background: none; /* 背景色なし */
+    border: none; /*枠線なし */
+    color: #999;
+    font-size: 14px;
+    padding: 8px; /* タップ領域を広げる */
+    height: auto; /* 共通ボタン設定の高さ(40px)を上書き */
+    width: auto;
+    cursor: pointer;
+    transition: transform 0.3s ease; /* 回転アニメーション */
+    display: flex; /* 中央揃え */
+    align-items: center;
+    justify-content: center;
+}
+
+/* パネルが折りたたまれた時の状態 */
+/* 1. コンテンツを非表示にする */
+#top.collapsed #panel-content {
+    display: none;
+}
+
+/* 2. ボタンのアイコンを回転させる（▲ を ▼ に見せる） */
+#top.collapsed #panel-toggle-btn {
+    transform: rotate(180deg);
+}
+
+/* 3. 折りたたみ時はヘッダーの境界線を消してスッキリさせる */
+#top.collapsed #panel-header {
+    border-bottom: none;
+}
+
+/* コントロールエリア */
+#controls {
+    padding: 15px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* ラベルと入力欄のセット */
+#controls label {
+    display: flex;
+    flex-direction: column;
+    font-size: 11px;
+    font-weight: bold;
+    color: #777;
+    text-transform: uppercase;
+    gap: 4px;
+}
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
     border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .12);
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
 }
 
-/* Leafletカスタマイズ */
+input:focus, select:focus {
+    outline: none;
+    border-color: #007AFF; /* ブルー */
+}
+
+/* ボタンのデザイン */
+button {
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    padding: 12px;
+    font-weight: bold;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+#run {
+    background: #007AFF;
+    color: white;
+}
+
+#run:hover { background: #0056b3; }
+
+#period {
+    background: #34C759; /* グリーン */
+    color: white;
+}
+
+#period:hover { background: #28a745; }
+
+/* period の文字列は1行で表示 */
+.full-btn {
+	grid-column: span 2;
+    white-space: nowrap;	 /* 文字を改行させない設定 */
+}
+
+#clear {
+    background: #eee;
+    color: #666;
+    padding: 8px;
+}
+#clear:hover { background: #ddd; }
+
+#redisplay {
+    background: #ff8800;
+    color: white;
+    padding: 8px;
+}
+#redisplay:hover { background: #ff5500; }
+
+/* clear の文字列は1行で表示 */
+.half-btn {
+	grid-column: span 1;
+    white-space: nowrap;	 /* 文字を改行させない設定 */
+}
+
+
+/* インフォメーション */
+#info {
+    padding: 12px 15px;
+    background: rgba(0, 0, 0, 0.03);
+    font-size: 12px;
+    line-height: 1.5;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+
+/* Leaflet ポップアップの洗練 */
+.leaflet-popup-content-wrapper {
+    border-radius: 12px !important;
+    padding: 5px !important;
+}
+
+/* マップのカーソルを十字（クロスヘア）に強制する */
 .leaflet-container {
     cursor: crosshair !important;
 }
 
-.leaflet-popup-content-wrapper {
-    padding: 10px 14px !important;
-    border-radius: 8px !important;
-    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.3) !important;
+/* 横並びにするための設定 */
+.input-row {				/* "対象の山" ... "可視範囲" */
+    display: flex;
+    align-items: flex-end; /* ラベルのテキストがあるため、下揃えにして高さを合わせる */
+    gap: 8px;
+    grid-column: span 2;
 }
 
-.leaflet-popup-content-wrapper.mountain-popup .leaflet-popup-content {
-    white-space: normal !important;
-    width: auto !important;
-    max-width: 300px !important;
-    line-height: 1.6 !important;
-    font-size: 15px !important;
-    font-weight: 600;
-    text-align: center;
-    padding: 8px 12px !important;
+.input-row label {
+    flex: 1; /* セレクトボックス側を可変（残りの幅を埋める）にする */
+    margin-bottom: 0;
 }
 
-.leaflet-popup-tip {
-    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.3) !important;
+/* 現在無効：横並びにするための設定 */
+.obs-row {				/* 観測地の緯度、経度、標高表示 */
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    grid-column: span 2;
 }
 
-/* ユーティリティ */
-.hide-item {
-    display: none;
+/* 現在無効：高度、方位、仰角の入力域は小さくする */
+.sub-row {					/* 観測者痴情高、方位許容、仰角許容 */
+    display: flex;
+    align-items: flex-end;	/* ラベルのテキストがあるため、下揃えにして高さを合わせる */
+    gap: 8px;
+    grid-column: span 2;
 }
 
-img {
-    max-width: 100%;
-    height: auto;
+/* ボタンの調整 */
+#run {
+    white-space: nowrap; /* 文字列を改行させない */
+    width: auto;         /* 幅をコンテンツ（文字）に合わせる */
+    flex-shrink: 0;      /* ボタンが圧縮されないようにする */
+    padding: 10px 12px;  /* セレクトボックスと高さを合わせるための微調整 */
+    height: 40px;        /* selectと同じ高さに固定 */
 }
 
-/* =========================================================
-   📱 スマホ最適化（600px 以下）
-   ========================================================= */
+.message-area {
+  white-space: pre-wrap; /* 改行コードを反映し、枠端で折り返す */
+}
+
+
+/* スマホ表示の微調整 */
+/* 📱 スマホ最適化（600px 以下） */
 @media (max-width: 600px) {
-
-    /* スマホでは縦2分割構造にする */
-    body {
+    #top {
+        top: 0;
+        left: 0;
+        width: 100%;
+        border-radius: 0;
+        max-height: 55vh;	/* パネル全体の最大高さを画面の50%に制限 */
+        display: flex;
         flex-direction: column;
+        overflow: hidden;	/* 親ははみ出しを隠す */
     }
 
-    /* コントロール部分を独立スクロールに */
+    /* 新しく追加したラッパー要素をスクロール可能にする */
+    #panel-content {
+        overflow-y: auto;					/* 👈 中身が多い場合にここでスクロールさせる */
+        -webkit-overflow-scrolling: touch;	/* iOSでのスクロールを滑らかにする */
+        flex: 1;							/* 残りの高さを埋める */
+    }
+
     #controls {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 6px;
-        width: 100%;
-        max-height: 40vh;      /* 上の40%をコントロールに */
-        overflow-y: auto;       /* コントロールだけスクロール */
-        padding-right: 6px;     /* スクロールバー対策 */
+        /* スマホでは2列にして高さを抑える */
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding: 10px;
+        display: grid;		/* FlexboxではなくGridに戻してレイアウトを維持 */
     }
 
-    /* 地図を常に60%確保 */
-    #map {
-        height: 60vh !important;
-        min-height: 60vh !important;
-        flex: none;             /* スクロールで縮まないように */
+    /* 各ボタンの横幅調整 */
+    #run, #period, .panel-title, #info {
+        grid-column: span 2;
+    }
+    /* 各ボタンの横幅調整 */
+    #clear, #redisplay {
+        grid-column: span 1;
     }
 
-    /* 入力欄の幅調整 */
-    #controls input,
-    #controls select,
-    #controls button {
-        width: 100%;
-        font-size: 14px;
-        padding: 6px 8px;
-    }
-
-    /* 情報パネルも少し圧縮 */
-    #info {
-        max-height: 150px;
-        font-size: 12px;
+    .input-row, .flex-container {
+        grid-column: span 2;	/* スマホでは横並びを解除して1列にする */
     }
 }
-
-
