@@ -145,11 +145,6 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
         window.visibilityBoundaries = L.layerGroup().addTo(map);
     }
 
-	// ▼▼▼ 修正: 補正値を定義（反時計回りに2度ずらす） ▼▼▼
-    // const AZIMUTH_CORRECTION = 4.93; //一丁平に合わせると南限がずれる(--; 
-    const AZIMUTH_CORRECTION = 3.0;
-    // ▲▲▲
-    
     const mountainPoint = [mt.lat, mt.lon];
     
     // 山頂の位置での太陽方位範囲を計算(参考用)
@@ -160,7 +155,7 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
         
         // 夕日の北限: 太陽が最も北に沈む日
         // 観測地点は山の東側なので、太陽方位 - 180度
-	const sunsetNorthAz = sunRange.sunset.min - 180 - AZIMUTH_CORRECTION;
+	const sunsetNorthAz = sunRange.sunset.min - 180 - CONSTANTS.SEARCH.AZIMUTH_CORRECTION_N;
 
         const sunsetNorthPoint = findObservationPoint(mt, sunsetNorthAz, 100, obsElev);
         
@@ -191,7 +186,7 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
         }
         
         // 夕日の南限: 太陽が最も南に沈む日
-	const sunsetSouthAz = sunRange.sunset.max - 180 - AZIMUTH_CORRECTION;
+	const sunsetSouthAz = sunRange.sunset.max - 180 - CONSTANTS.SEARCH.AZIMUTH_CORRECTION_S;
 
         const sunsetSouthPoint = findObservationPoint(mt, sunsetSouthAz, 100, obsElev);
         
@@ -246,7 +241,8 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
     // === 朝日の範囲(西側から山を見る) ===
     if (sunRange.sunrise.min < 360 && sunRange.sunrise.max > 0) {
 
-	const sunriseSouthAz = sunRange.sunrise.min + 180 - AZIMUTH_CORRECTION;
+	// 朝日の南限: 太陽が最も南から昇る日（冬至）
+	const sunriseSouthAz = sunRange.sunrise.min + 180 - CONSTANTS.SEARCH.AZIMUTH_CORRECTION_N;
 
         const sunriseSouthPoint = findObservationPoint(mt, sunriseSouthAz, 100, obsElev);
         
@@ -278,7 +274,8 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
             );
         }
         
-	const sunriseNorthAz = sunRange.sunrise.max + 180 - AZIMUTH_CORRECTION;
+	// 朝日の北限: 太陽が最も北から昇る日（夏至）
+	const sunriseNorthAz = sunRange.sunrise.max + 180 - CONSTANTS.SEARCH.AZIMUTH_CORRECTION_S;
 
         const sunriseNorthPoint = findObservationPoint(mt, sunriseNorthAz, 100, obsElev);
         
