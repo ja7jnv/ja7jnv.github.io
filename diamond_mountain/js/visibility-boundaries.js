@@ -74,7 +74,7 @@ function findObservationPoint(mt, targetAzimuth, searchDistance = 100, obsElev =
         const reverseAzimuth = (ba.bearing + 180) % 360;
         const azDiff = angleDiff(reverseAzimuth, targetAzimuth);
         
-        if (azDiff < tolerance) {
+        if (Math.abs(azDiff) < tolerance) {
             return {
                 lat: testPoint[0],
                 lon: testPoint[1],
@@ -90,7 +90,7 @@ function findObservationPoint(mt, targetAzimuth, searchDistance = 100, obsElev =
         }
         
         // 方位のずれに応じて調整
-        if (reverseAzimuth < targetAzimuth) {
+        if (azDiff > 0) {
             minDist = testDist;
         } else {
             maxDist = testDist;
@@ -144,6 +144,11 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
     } else {
         window.visibilityBoundaries = L.layerGroup().addTo(map);
     }
+
+	// ▼▼▼ 修正: 補正値を定義（反時計回りに2度ずらす） ▼▼▼
+    // const AZIMUTH_CORRECTION = 4.93; //一丁平に合わせると南限がずれる(--; 
+    const AZIMUTH_CORRECTION = 3.0;
+    // ▲▲▲
     
     const mountainPoint = [mt.lat, mt.lon];
     
@@ -155,13 +160,15 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
         
         // 夕日の北限: 太陽が最も北に沈む日
         // 観測地点は山の東側なので、太陽方位 - 180度
-        const sunsetNorthPoint = findObservationPoint(mt, sunRange.sunset.min - 180, 100, obsElev);
+	const sunsetNorthAz = sunRange.sunset.min - 180 - AZIMUTH_CORRECTION;
+
+        const sunsetNorthPoint = findObservationPoint(mt, sunsetNorthAz, 100, obsElev);
         
         if (sunsetNorthPoint) {
             // 線を延長: 観測地点からさらに同じ方向に伸ばす
             const extendedPoint = calculatePointFromMountain(
                 mt.lat, mt.lon, 
-                sunRange.sunset.min - 180, 
+                sunsetNorthAz, 
                 100  // 100kmまで延長
             );
             
@@ -184,13 +191,15 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
         }
         
         // 夕日の南限: 太陽が最も南に沈む日
-        const sunsetSouthPoint = findObservationPoint(mt, sunRange.sunset.max - 180, 100, obsElev);
+	const sunsetSouthAz = sunRange.sunset.max - 180 - AZIMUTH_CORRECTION;
+
+        const sunsetSouthPoint = findObservationPoint(mt, sunsetSouthAz, 100, obsElev);
         
         if (sunsetSouthPoint) {
             // 線を延長: 100kmまで
             const extendedPoint = calculatePointFromMountain(
                 mt.lat, mt.lon, 
-                sunRange.sunset.max - 180, 
+                sunsetSouthAz, 
                 100
             );
             
@@ -236,7 +245,10 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
     
     // === 朝日の範囲(西側から山を見る) ===
     if (sunRange.sunrise.min < 360 && sunRange.sunrise.max > 0) {
-        const sunriseSouthPoint = findObservationPoint(mt, sunRange.sunrise.min + 180, 100, obsElev);
+
+	const sunriseSouthAz = sunRange.sunrise.min + 180 - AZIMUTH_CORRECTION;
+
+        const sunriseSouthPoint = findObservationPoint(mt, sunriseSouthAz, 100, obsElev);
         
         if (sunriseSouthPoint) {
             const bearingFromPoint = sunriseSouthPoint.bearing;
@@ -264,10 +276,11 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
                 `観測地点: 山から ${sunriseSouthPoint.distance.toFixed(1)} km 西南西<br>` +
                 `山の仰角: ${sunriseSouthPoint.elevation.toFixed(2)}°`
             );
-        } else {
         }
         
-        const sunriseNorthPoint = findObservationPoint(mt, sunRange.sunrise.max + 180, 100, obsElev);
+	const sunriseNorthAz = sunRange.sunrise.max + 180 - AZIMUTH_CORRECTION;
+
+        const sunriseNorthPoint = findObservationPoint(mt, sunriseNorthAz, 100, obsElev);
         
         if (sunriseNorthPoint) {
             const bearingFromPoint = sunriseNorthPoint.bearing;

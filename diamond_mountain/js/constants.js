@@ -44,8 +44,8 @@ const CONSTANTS = {
     
     // ===== 標高設定 =====
     ELEVATION: {
-        DEFAULT_ASSUMED: 50, // デフォルト仮定標高(m)
-        API_TIMEOUT_MS: 5000, // APIタイムアウト(ミリ秒)
+        DEFAULT_ASSUMED: 2,		// 標高取得失敗時は海上と思われる。デフォルト仮定標高(m)
+        API_TIMEOUT_MS: 5000,	// APIタイムアウト(ミリ秒)
     },
     
     // ===== UI設定 =====
