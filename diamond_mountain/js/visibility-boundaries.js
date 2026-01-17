@@ -74,7 +74,7 @@ function findObservationPoint(mt, targetAzimuth, searchDistance = 100, obsElev =
         const reverseAzimuth = (ba.bearing + 180) % 360;
         const azDiff = angleDiff(reverseAzimuth, targetAzimuth);
         
-        if (azDiff < tolerance) {
+        if (Math.abs(azDiff) < tolerance) {
             return {
                 lat: testPoint[0],
                 lon: testPoint[1],
@@ -90,7 +90,7 @@ function findObservationPoint(mt, targetAzimuth, searchDistance = 100, obsElev =
         }
         
         // 方位のずれに応じて調整
-        if (reverseAzimuth < targetAzimuth) {
+        if (azDiff > 0) {
             minDist = testDist;
         } else {
             maxDist = testDist;
@@ -144,7 +144,7 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
     } else {
         window.visibilityBoundaries = L.layerGroup().addTo(map);
     }
-    
+
     const mountainPoint = [mt.lat, mt.lon];
     
     // 山頂の位置での太陽方位範囲を計算(参考用)
@@ -155,13 +155,15 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
         
         // 夕日の北限: 太陽が最も北に沈む日
         // 観測地点は山の東側なので、太陽方位 - 180度
-        const sunsetNorthPoint = findObservationPoint(mt, sunRange.sunset.min - 180, 100, obsElev);
+	const sunsetNorthAz = sunRange.sunset.min - 180 - CONSTANTS.SEARCH.AZIMUTH_CORRECTION_N;
+
+        const sunsetNorthPoint = findObservationPoint(mt, sunsetNorthAz, 100, obsElev);
         
         if (sunsetNorthPoint) {
             // 線を延長: 観測地点からさらに同じ方向に伸ばす
             const extendedPoint = calculatePointFromMountain(
                 mt.lat, mt.lon, 
-                sunRange.sunset.min - 180, 
+                sunsetNorthAz, 
                 100  // 100kmまで延長
             );
             
@@ -184,13 +186,15 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
         }
         
         // 夕日の南限: 太陽が最も南に沈む日
-        const sunsetSouthPoint = findObservationPoint(mt, sunRange.sunset.max - 180, 100, obsElev);
+	const sunsetSouthAz = sunRange.sunset.max - 180 - CONSTANTS.SEARCH.AZIMUTH_CORRECTION_S;
+
+        const sunsetSouthPoint = findObservationPoint(mt, sunsetSouthAz, 100, obsElev);
         
         if (sunsetSouthPoint) {
             // 線を延長: 100kmまで
             const extendedPoint = calculatePointFromMountain(
                 mt.lat, mt.lon, 
-                sunRange.sunset.max - 180, 
+                sunsetSouthAz, 
                 100
             );
             
@@ -236,7 +240,11 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
     
     // === 朝日の範囲(西側から山を見る) ===
     if (sunRange.sunrise.min < 360 && sunRange.sunrise.max > 0) {
-        const sunriseSouthPoint = findObservationPoint(mt, sunRange.sunrise.min + 180, 100, obsElev);
+
+	// 朝日の南限: 太陽が最も南から昇る日（冬至）
+	const sunriseSouthAz = sunRange.sunrise.min + 180 - CONSTANTS.SEARCH.AZIMUTH_CORRECTION_N;
+
+        const sunriseSouthPoint = findObservationPoint(mt, sunriseSouthAz, 100, obsElev);
         
         if (sunriseSouthPoint) {
             const bearingFromPoint = sunriseSouthPoint.bearing;
@@ -264,10 +272,12 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
                 `観測地点: 山から ${sunriseSouthPoint.distance.toFixed(1)} km 西南西<br>` +
                 `山の仰角: ${sunriseSouthPoint.elevation.toFixed(2)}°`
             );
-        } else {
         }
         
-        const sunriseNorthPoint = findObservationPoint(mt, sunRange.sunrise.max + 180, 100, obsElev);
+	// 朝日の北限: 太陽が最も北から昇る日（夏至）
+	const sunriseNorthAz = sunRange.sunrise.max + 180 - CONSTANTS.SEARCH.AZIMUTH_CORRECTION_S;
+
+        const sunriseNorthPoint = findObservationPoint(mt, sunriseNorthAz, 100, obsElev);
         
         if (sunriseNorthPoint) {
             const bearingFromPoint = sunriseNorthPoint.bearing;
@@ -323,6 +333,115 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
 }
 
 /**
+ * 修正版: 太陽の軌道（日付）を指定して、山頂と重なる地点を探す
+ * 方位角固定ではなく、指定日の太陽軌道と山頂が重なる地点を探します。
+ */
+function findObservationPointByDate(mt, targetDate, isSunset, searchDistance = 100, obsElev = 0) {
+    let minDist = 5;
+    let maxDist = searchDistance;
+    const tolerance = 0.1; // 許容誤差（度）
+    
+    // 結果を格納する変数
+    let bestPoint = null;
+    let minError = 999;
+
+    // 太陽方位自体が仰角（距離）によって変わるため距離を少しずつ変えながらベストな点を探す
+    // ※本来はニュートン法などが高速だが、簡易的にステップ探索
+    
+    // 100km〜5kmまで走査
+    const steps = 20;
+    for (let i = 0; i <= steps; i++) {
+        const testDist = minDist + (maxDist - minDist) * (i / steps);
+        
+        // 1. まず、その距離にある山頂の「見かけの仰角」を計算
+        // （方位は仮で決める必要があるが、仰角は距離依存が支配的なので一旦概算でOK）
+        // 便宜上、前回の方位か、山から見た概算方位を使う
+        const tempElev = calculateApparentElevation(testDist, mt.h, obsElev);
+        
+        // 2. その日付・その仰角における太陽の方位を計算
+        // 「指定日付・指定仰角での太陽方位」を返す関数を用意する
+        const sunAzimuthAtElev = getSunAzimuthAtElevation(mt.lat, mt.lon, targetDate, tempElev, isSunset);
+        
+        if (sunAzimuthAtElev === null) continue; // その仰角まで太陽が来ない場合
+
+        // 3. その太陽方位の反対側（観測者から見て山があるべき方向）を計算
+        const targetBearingFromObs = sunAzimuthAtElev; // 観測者 -> 太陽（山）
+        
+        // 4. 山から見て、その方位の反対側にある地点を計算（ここが実際の観測候補地）
+        // 山 -> 観測者 の方位 = 太陽方位 + 180 (球面上での厳密な逆方位計算が必要だが、簡易的にはこれで)
+        const bearingFromMt = (sunAzimuthAtElev + 180) % 360;
+        
+        const testPoint = calculatePointFromMountain(mt.lat, mt.lon, bearingFromMt, testDist);
+        
+        // 5. 検証: その地点から山を見た時の正確な方位と仰角を再計算
+        const ba = bearingAndApparentElevation(
+            testPoint[0], testPoint[1], obsElev,
+            mt.lat, mt.lon, mt.h
+        );
+        
+        // 太陽の方位 と 山の方位 のズレを確認
+        // 厳密には、ここで再度「その正確な仰角ba.elevでの太陽方位」と比較すべき
+        const preciseSunAz = getSunAzimuthAtElevation(mt.lat, mt.lon, targetDate, ba.elev, isSunset);
+        const diff = Math.abs(angleDiff(ba.bearing, preciseSunAz));
+        
+        if (diff < minError) {
+            minError = diff;
+            bestPoint = {
+                lat: testPoint[0],
+                lon: testPoint[1],
+                distance: testDist,
+                bearing: ba.bearing,
+                elevation: ba.elev,
+                sunAzimuth: preciseSunAz
+            };
+        }
+    }
+    
+    return minError < 1.0 ? bestPoint : null; // 誤差が大きすぎる場合は見つからなかったとする
+}
+
+/**
+ * 距離から見かけの仰角（概算）を計算するヘルパー
+ */
+function calculateApparentElevation(distKm, mtHeightM, obsElevM) {
+    const distM = distKm * 1000;
+    const heightDiff = mtHeightM - obsElevM;
+    // 地球の曲率を考慮（簡易式）
+    const R = 6371000;
+    const drop = (distM * distM) / (2 * R); // 曲率による沈み込み
+    const apparentHeight = heightDiff - drop;
+    return rad2deg(Math.atan2(apparentHeight, distM));
+}
+
+/*
+ * 指定した日付で、指定した仰角(h)に太陽が来る瞬間の太陽方位角を返す関数
+ */
+function getSunAzimuthAtElevation(lat, lon, date, targetElev, isSunset) {
+    // この関数は、指定した日付で太陽が指定仰角に達する瞬間の方位角を計算する。
+    // 実装には天文計算ライブラリが必要。ここでは擬似コード。
+
+    // 1. 指定日の太陽の軌道を計算
+    // 2. 太陽の高度がtargetElevに達する時刻を探す
+    // 3. その時刻の太陽方位角を返す
+
+    // 例: pseudoSunPositionFunctionは天文計算ライブラリの関数
+    const sunPositions = pseudoSunPositionFunction(lat, lon, date);
+    
+    for (let pos of sunPositions) {
+        if (Math.abs(pos.elevation - targetElev) < 0.1) { // 許容誤差
+            if (isSunset && pos.elevation < targetElev) {
+                return pos.azimuth; // 夕方の場合
+            } else if (!isSunset && pos.elevation > targetElev) {
+                return pos.azimuth; // 朝の場合
+            }
+        }
+    }
+    
+    return null; // 指定仰角に達しない場合
+}
+
+
+/**
  * 可視範囲の境界線をクリア
  */
 function clearVisibilityBoundaries() {
@@ -330,3 +449,4 @@ function clearVisibilityBoundaries() {
         window.visibilityBoundaries.clearLayers();
     }
 }
+
