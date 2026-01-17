@@ -24,6 +24,8 @@ const CONSTANTS = {
         MIN_SUN_ALTITUDE: -2,    // 最低太陽高度(度)
         BEARING_MIN: 150,        // 方位角最小値(度)
         BEARING_MAX: 360,        // 方位角最大値(度)
+	AZIMUTH_CORRECTION_N: 4.93,	// 可視範囲を求めるときの仰角補正 - 北東・南西
+	AZIMUTH_CORRECTION_S: 3.0,	// 可視範囲を求めるときの仰角補正 - 南東・北西
     },
     
     // ===== 地図表示設定 =====
@@ -40,11 +42,15 @@ const CONSTANTS = {
         MOUNTAIN_VIEW_OFFSET_KM: 20, // 山から東方向のオフセット(km)
         VISIBILITY_CIRCLE_RADIUS_M: 500, // 可視地点の円の半径(m)
     },
+
+	LABEL: {
+		DISPLAY_OFFSET: 0.2	// 表示位置の山頂からの経度オフセット
+	},
     
     // ===== 標高設定 =====
     ELEVATION: {
-        DEFAULT_ASSUMED: 50, // デフォルト仮定標高(m)
-        API_TIMEOUT_MS: 5000, // APIタイムアウト(ミリ秒)
+        DEFAULT_ASSUMED: 2,		// 標高取得失敗時は海上と思われる。デフォルト仮定標高(m)
+        API_TIMEOUT_MS: 5000,		// APIタイムアウト(ミリ秒)
     },
     
     // ===== UI設定 =====
