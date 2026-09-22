@@ -334,7 +334,7 @@ function drawVisibilityBoundaries(map, mt, startDate, years, obsElev = 0) {
 
 /**
  * 修正版: 太陽の軌道（日付）を指定して、山頂と重なる地点を探す
- * 方位角固定ではなく、指定日の太陽軌道と山頂が重なる地点を探します。
+ * 方位角固定ではなく、指定日の太陽軌道と山頂が重なる地点を探す。
  */
 function findObservationPointByDate(mt, targetDate, isSunset, searchDistance = 100, obsElev = 0) {
     let minDist = 5;
