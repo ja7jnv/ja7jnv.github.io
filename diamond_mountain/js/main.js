@@ -28,6 +28,15 @@ window.addEventListener('load', function() {
     window.visLayer = L.layerGroup().addTo(map);
     window.sampleLayer = L.layerGroup().addTo(map);
 
+    // 再表示に必要な観測地点の状態
+    let temporaryDisplay = {
+        lat: null,
+        lon: null,
+        sun: null,
+        marker: null,
+        info: ''
+    };
+
     // ===== ヘルパー関数: 入力値を取得 =====
     function getInputValues() {
         return {
@@ -220,7 +229,7 @@ window.addEventListener('load', function() {
         } else {
             // 山を選択もしくは追加 → 追加モードに戻る
             if (window.mtMarker) window.mtMarker.remove();
-			temporaryParameters.marker.removeFrom(map);
+			if (temporaryDisplay.marker) temporaryDisplay.marker.removeFrom(map);
             Utils.showInfo("新しい山を追加するには、地図をクリックしてください。");
         }
     });
@@ -339,18 +348,20 @@ window.addEventListener('load', function() {
         const stime = formatTimePart(so.sunSet);
 
         // 日の出・日の入り方向の線を描画
-		temporaryParameters.setTemporaryParameters(map, e.latlng.lat, e.latlng.lng, so);
+        temporaryDisplay.lat = e.latlng.lat;
+        temporaryDisplay.lon = e.latlng.lng;
+        temporaryDisplay.sun = so;
         drawSunDirectionLines(map, e.latlng.lat, e.latlng.lng, so);
 
         const info = `観測地  緯度: ${lat}°  経度: ${lon}°\n高度(標高${Utils.formatNumber(terrainElev, 1)}m+地上高${inputs.groundInput}m): ${Utils.formatNumber(totalObsElev, 1)}m`;
-		temporaryParameters.setInfo(info);
+        temporaryDisplay.info = info;
         Utils.showInfo(info);
 
 		document.getElementById('obsLat').value = Number(lat).toFixed(2);
 		document.getElementById('obsLon').value = Number(lon).toFixed(2);
 		document.getElementById('obsEle').value = terrainElev;
 
-        temporaryParameters.marker = L.popup()
+		temporaryDisplay.marker = L.popup()
             .setLatLng(e.latlng)
             .setContent(`<pre style="font-size:13px;line-height:1.4">${s}</pre>`)
             .openOn(map);
@@ -397,65 +408,21 @@ window.addEventListener('load', function() {
     // ===== イベントリスナー: クリアボタン =====
     document.getElementById('clear').addEventListener('click', () => {
 		eraseLine();
-		temporaryParameters.marker.removeFrom(map);
+        if (temporaryDisplay.marker) temporaryDisplay.marker.removeFrom(map);
         Utils.showInfo(CONSTANTS.UI.CLEAR_MESSAGE);
     });
 
     // ===== イベントリスナー: 再表示ボタン =====
     document.getElementById('redisplay').addEventListener('click', () => {
-		temporaryParameters.marker.openOn(map);
-        drawSunDirectionLines(temporaryParameters.getTemporaryMap(),temporaryParameters.getTemporaryLat(),temporaryParameters.getTemporaryLon(),temporaryParameters.getTemporarySun());
-        Utils.showInfo(temporaryParameters.getInfo());
+        if (!temporaryDisplay.marker || temporaryDisplay.lat === null || !temporaryDisplay.sun) {
+            Utils.showInfo('再表示できる観測地点がありません。');
+            return;
+        }
+
+        temporaryDisplay.marker.openOn(map);
+        drawSunDirectionLines(map, temporaryDisplay.lat, temporaryDisplay.lon, temporaryDisplay.sun);
+        Utils.showInfo(temporaryDisplay.info);
     });
-
-// 再表示用パラメタ退避域
-	class temporaryParameters {
-		static map;
-		static lat;
-		static lon;
-		static sun;
-		static marker;
-		static info;
-
-		static setTemporaryParameters(mp, lt, ln, so) {
-			this.map = mp;
-			this.lat = lt;
-			this.lon = ln;
-			this.sun = so;
-		}
-
-		static getTemporaryMap() {
-			return this.map;
-		}
-
-		static getTemporaryLat() {
-			return this.lat;
-		}
-
-		static getTemporaryLon() {
-			return this.lon;
-		}
-
-		static getTemporarySun() {
-			return this.sun;
-		}
-
-		static setMarker(mk) {
-			this.marker = mk;
-		}
-
-		static getMarker() {
-			return(this.marker);
-		}
-
-		static setInfo(inf) {
-			this.info = inf;
-		}
-
-		static getInfo() {
-			return(this.info);
-		}
-	}
 
 });
 
