@@ -1,6 +1,6 @@
 ---
 name: "Celestial Vue Migration"
-description: "Use when migrating Diamond Mountain from vanilla JavaScript to Vue, preserving the existing Sun behavior first and then adding Moon rise/set and alignment support with an extensible path for Mercury, Venus, Mars, Jupiter, and Saturn."
+description: "Use when migrating Diamond Mountain from vanilla JavaScript to Vue with Astronomy Engine, preserving existing Sun behavior first and then adding Moon rise/set and alignment support with an extensible path for Mercury, Venus, Mars, Jupiter, and Saturn."
 tools: [read, search, edit, execute, todo]
 argument-hint: "Describe the next migration slice or celestial-body feature to implement."
 user-invocable: true
@@ -18,12 +18,18 @@ reasoning-effort: high
 - 一括書き換えを避け、必ず小さな段階に分ける。
 - 各段階で既存の太陽機能を確認してから次へ進む。
 - Vueは状態管理とUI構成に使い、天文計算はUIから独立した純粋なモジュールとして保つ。
+- 天体位置、出没、月相などの天文計算にはAstronomy Engineを採用し、自己流の天文計算式を新規拡張しない。
+- Astronomy Engineのバージョン、利用API、精度、座標系、時刻系、出没定義を記録する。
+- `Observer`、`Equator`、`Horizon`、`SearchRiseSet`、`SearchAltitude`を天文計算の基本APIとし、ライブラリ固有の戻り値はアプリ側の標準モデルへ変換する。
+- 山の距離、方位、仰角、観測地点探索、地図描画は天文計算から分離し、Diamond Mountain側の地理・検索処理として保つ。
 - Leafletのインスタンス、レイヤー、ポップアップはVueのライフサイクル内で生成・破棄する。
 - `window` グローバル、DOMの直接参照、暗黙のscript読み込み順依存を新規コードに追加しない。
-- 既存の計算式を移植するときは、移植と精度改善を同じ変更に混ぜない。
-- 月や惑星の計算精度を推測で実装せず、既存ライブラリまたは検証可能な天文アルゴリズムを選び、出典と制約を記録する。
+- 既存の太陽計算とAstronomy Engineの結果を比較し、出没定義、大気差、視差、座標系、時刻系の差を仕様差と実装不具合に分類する。
+- 月や惑星の計算精度を推測で実装せず、Astronomy Engineの対応範囲と制約を確認し、出典と代表日時の検証結果を記録する。
 - 観測地点、対象山、選択天体、検索期間、許容誤差、表示レイヤー、計算状態を明示的な状態として管理する。
 - 日付・時刻・タイムゾーン・地平線付近の補正・視差を太陽と月で混同しない。
+- ユーザー入力の日本時間とAstronomy Engineへ渡すUTCの変換境界を一箇所に集約する。
+- `Observer.height`の海抜標高と、`SearchRiseSet`の`metersAboveGround`を混同しない。
 - 既存のHTML直開き運用を壊す場合は、Viteなどの開発・ビルド手順と公開手順をREADMEに追加する。
 
 ## 天体の抽象化
@@ -34,6 +40,8 @@ reasoning-effort: high
 - `getVisibilityMetadata()`: 天体名、色、表示ラベル、利用可能な現象を返す
 
 太陽、月、水星、金星、火星、木星、土星をUIの条件分岐で個別処理しない。検索処理は天体アダプターを受け取り、対象天体に依存しない形にする。天体ごとに未対応の現象がある場合は、明示的な対応状態を返し、黙って太陽の計算へフォールバックしない。
+
+Astronomy Engineの`Equator()`は観測地点を指定してトップセントリックな赤経・赤緯を取得し、`Horizon()`で方位・高度へ変換する。`Horizon()`には日付の赤道座標を渡す。出没は`SearchRiseSet()`を使い、任意高度の候補には`SearchAltitude()`を使う。方位と山の仰角を同時に解く処理は検索ドメイン側で行い、Astronomy Engineに存在しないAPIを推測して作らない。
 
 ## 推奨構成
 既存構成を確認した上で、必要な範囲だけ次の方向へ整理する。
@@ -56,6 +64,7 @@ src/
   domain/
     astronomy/
       celestial-body.js
+      astronomy-engine-adapter.js
       sun.js
       moon.js
       planets.js
@@ -90,16 +99,21 @@ src/
 ### 3. 太陽機能の移植
 - まず状態、入力フォーム、メッセージ表示をVueへ移す。
 - 次にLeafletを`MapView`または同等の所有モジュールへ移す。
+- `astronomy-engine`をnpm依存として導入し、天文計算を`astronomy-engine-adapter.js`とSunアダプターの境界に閉じ込める。
+- 既存の自己流計算を新しい計算基盤として拡張せず、Sunの代表日時で旧実装とAstronomy Engineを比較してからUIへ接続する。
 - 天文計算、標高取得、可視範囲、期間検索を一度に書き換えず、機能単位で移植する。
 - 各段階で、山選択、地図クリック、山登録、標高取得失敗、可視範囲、詳細検索、クリア、再表示、期間一覧、CSV出力を確認する。
 
 ### 4. 共通検索モデルの確立
-- 太陽の計算結果を使って、天体に依存しない検索入力・候補・結果モデルを定義する。
+- Astronomy EngineのSunアダプターの計算結果を使って、天体に依存しない検索入力・候補・結果モデルを定義する。
 - 昇り・沈み、方位、仰角、許容誤差、検索期間、観測地点を共通化する。
-- 既存の太陽結果と新モデルの結果を比較し、差分が出た場合は原因を特定する。
+- 山側の方位・仰角計算は天文アダプターに入れず、地理計算として分離する。
+- 旧太陽結果とAstronomy Engine結果を比較し、出没定義、大気差、視差、時刻変換の差分原因を特定する。
+- 粗い時刻走査と精密化の性能を測定し、月・惑星で同じ検索刻みを使えるか確認する。
 
 ### 5. 月機能の追加
-- 月の位置計算、月の出・月の入り、必要な視差・地平線補正、月相表示を独立モジュールとして追加する。
+- Astronomy EngineのMoonアダプターで、観測地点を指定した月の位置、月の出・月の入り、必要な視差・地平線補正、月相表示を独立モジュールとして追加する。
+- 月の出没が24時間以内に発生しない場合の`null`を正常な状態として扱う。
 - 月を選択したときだけ月用の計算アダプターを使う。
 - 太陽との同時表示が必要になった場合は、天体ごとのレイヤーと凡例を分離する。
 - 月機能追加後も太陽を選択した既存フローが同じ結果になることを確認する。
@@ -114,7 +128,10 @@ src/
 - 少なくとも `npm run build`、既存テスト、主要操作のブラウザ確認を段階ごとに行う。
 - 開発サーバーを使う場合は、利用可能なポートと起動URLを報告する。
 - エラーが出た場合、まず同じ局所スライスを修正して同じ検証を再実行する。
-- 月の天文計算では、既知の天文ソフトウェアまたは信頼できる資料との代表日時比較を行う。
+- Astronomy Engine導入後は、Sunの方位・高度、日の出・日の入り時刻と方位を旧実装と同じ入力で比較する。
+- 月の天文計算では、JPL Horizonsなどの検証可能な資料または信頼できる天文ソフトウェアとの代表日時比較を行う。
+- 時刻差は秒、方位・高度差は循環差を使い、平均だけでなく最大値と95パーセンタイルを記録する。
+- 日本時間入力、UTC変換、UT/TT、標準大気差、月のトップセントリック視差を検証対象として明示する。
 - 検証できない精度や未対応機能を「対応済み」と報告しない。
 
 ## 禁止事項
@@ -122,6 +139,7 @@ src/
 - Vueコンポーネントに大量の天文計算やLeafletの詳細実装を埋め込まない。
 - `temporaryParameters` のような状態クラスを増やして場当たり的に共有しない。
 - 関係のないCSS刷新、デザイン変更、計算式の改善、ファイル削除を同時に行わない。
+- Astronomy Engineが提供しない任意方位の検索APIや、未検証のMoon/惑星計算を自己流で補完しない。
 - ユーザーの未コミット変更を破棄しない。
 - コミットやブランチ作成をユーザーに依頼されていない状態で行わない。
 
