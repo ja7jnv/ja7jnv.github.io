@@ -60,17 +60,37 @@ function sunPositionJD(jd) {
 }
 
 /**
+ * ユリウス日から均時差を計算
+ * @param {number} jd - ユリウス日
+ * @returns {number} 均時差(分)
+ */
+function equationOfTimeMinutes(jd) {
+    const daysFrom2000 = jd - CONSTANTS.JULIAN_DAY_J2000;
+    const M = deg2rad(357.5291 + 0.98560028 * daysFrom2000);
+    const L = deg2rad(280.459 + 0.98564736 * daysFrom2000);
+    const epsilon = deg2rad(23.439 - 0.00000036 * daysFrom2000);
+    const Y = Math.tan(epsilon / 2) ** 2;
+
+    return 4 * rad2deg(
+        Y * Math.sin(2 * L) -
+        2 * 0.01671 * Math.sin(M) +
+        4 * 0.00014 * Math.sin(2 * M)
+    );
+}
+
+/**
  * 地方時から時角を計算
  * @param {Date} localDate - 地方時
  * @param {number} longitude - 経度
  * @param {number} tzOffsetHours - タイムゾーンオフセット(時間)
+ * @param {number} eotMinutes - 均時差(分)
  * @returns {number} 時角(度)
  */
-function hourAngleFromLocalClock(localDate, longitude, tzOffsetHours) {
+function hourAngleFromLocalClock(localDate, longitude, tzOffsetHours, eotMinutes) {
     const Hh = localDate.getHours() + 
                localDate.getMinutes() / 60 + 
                localDate.getSeconds() / 3600;
-    const localSolarTime = Hh + (longitude / 15.0) - tzOffsetHours;
+    const localSolarTime = Hh + (longitude / 15.0) - tzOffsetHours + eotMinutes / 60;
     return 15 * (localSolarTime - 12);
 }
 
@@ -95,10 +115,11 @@ function sunAltAzLocal(lat, lon, localDate, tzOffsetHours) {
     const dtUtc = new Date(utcMillis);
     const jd = toJulianDayUTC(dtUtc);
     const sp = sunPositionJD(jd);
+    const eotMinutes = equationOfTimeMinutes(jd);
     
     const delta = deg2rad(sp.decl);
     const phi = deg2rad(lat);
-    const Hdeg = hourAngleFromLocalClock(localDate, lon, tzOffsetHours);
+    const Hdeg = hourAngleFromLocalClock(localDate, lon, tzOffsetHours, eotMinutes);
     const H = deg2rad(Hdeg);
     
     let sin_h = Math.sin(phi) * Math.sin(delta) + 
@@ -221,8 +242,7 @@ function sunRiseSet(lat, lon, localDate, tzOffsetHours) {
     // ----------------------------------------------------
     // 3. 均時差 (EOT) の計算
     // ----------------------------------------------------
-    const Y = Math.tan(degToRad(epsilon / 2)) * Math.tan(degToRad(epsilon / 2));
-    const eotMinutes = 4 * radToDeg(Y * Math.sin(2 * degToRad(L)) - 2 * 0.01671 * Math.sin(degToRad(M)) + 4 * 0.00014 * Math.sin(degToRad(2 * M)));
+    const eotMinutes = equationOfTimeMinutes(toJulianDayUTC(dateUTC));
 
     // ----------------------------------------------------
     // 4. 時角 (H) の計算と極夜/白夜の判定
@@ -391,4 +411,3 @@ function formatTimePart(dateObj) {
     // 'ja-JP'ロケールで時刻文字列を生成（例: 06:48, 13:00）
     return dateObj.toLocaleTimeString('ja-JP', optionsTime);
 }
-
