@@ -79,6 +79,9 @@ Diamond Mountainは役立つことを願って頒布されていますが、い�
 
     <div id="map"></div>
 
+    <!-- Vueの段階的移行用マウントポイント。既存画面は従来のスクリプトで維持する。 -->
+    <div id="vue-app"></div>
+
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
@@ -92,6 +95,7 @@ Diamond Mountainは役立つことを願って頒布されていますが、い�
     <script src="js/sun-direction.js"></script>          <!-- 7. 日の出・日の入り線描画 -->
     <script src="js/periods.js"></script>                <!-- 8. 期間検索機能 -->
     <script src="js/main.js"></script>                   <!-- 9. メインロジック(最後!) -->
+    <script type="module" src="/src/main.js"></script>   <!-- Vue基盤 -->
 </body>
 
 </html>

@@ -1,4 +1,18 @@
 ## Diamond mountain release note
+
+### 開発・ビルド
+
+Vue/Viteの基盤を追加しました。既存の太陽機能とLeaflet処理は現段階では従来のスクリプトで実行されます。
+
+```sh
+npm install
+npm run dev
+npm run build
+npm run preview
+```
+
+`npm run build`の成果物は`dist/`に生成されます。GitHub Pagesなどで公開する場合は、Viteでビルドした`dist/`の内容を公開対象にしてください。既存の`index.html`を直接開く運用では、Vueのモジュール読み込みが動作しないため、開発サーバーまたはビルド後の静的サーバーを使用してください。
+
 ### V1.3 2025.12.28 UI周りを中心に機能追加
 #### コントロールパネルのフローティング化
 - 見栄えの変更
