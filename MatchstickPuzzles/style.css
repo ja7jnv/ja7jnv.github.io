@@ -1,0 +1,135 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172033;
+  background: #eef2f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+}
+
+.puzzle {
+  width: min(100% - 32px, 720px);
+  margin: 48px auto;
+  padding: clamp(24px, 5vw, 48px);
+  background: #ffffff;
+  border: 1px solid #dce3ed;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgb(23 32 51 / 8%);
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #526b9a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(1.7rem, 5vw, 2.4rem);
+}
+
+.description {
+  margin: 12px 0 32px;
+  color: #596579;
+  line-height: 1.7;
+}
+
+.puzzle-form label,
+h2 {
+  font-weight: 700;
+}
+
+.input-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+input {
+  min-width: 0;
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid #b8c4d6;
+  border-radius: 8px;
+  color: inherit;
+  font: inherit;
+  font-size: 1rem;
+}
+
+input:focus {
+  border-color: #3e67ab;
+  outline: 3px solid rgb(62 103 171 / 18%);
+}
+
+button {
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 8px;
+  background: #315d9f;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+button:hover {
+  background: #264d88;
+}
+
+button:focus-visible {
+  outline: 3px solid rgb(62 103 171 / 32%);
+  outline-offset: 2px;
+}
+
+.hint {
+  margin: 8px 0 0;
+  color: #68758a;
+  font-size: 0.875rem;
+}
+
+.output-section {
+  margin-top: 32px;
+}
+
+.output {
+  display: block;
+  min-height: 92px;
+  margin-top: 10px;
+  padding: 16px;
+  border: 1px solid #dce3ed;
+  border-radius: 8px;
+  background: #f7f9fc;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.output.error {
+  border-color: #e6b9b9;
+  background: #fff7f7;
+  color: #a33636;
+}
+
+@media (max-width: 520px) {
+  .puzzle {
+    margin: 20px auto;
+  }
+
+  .input-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
