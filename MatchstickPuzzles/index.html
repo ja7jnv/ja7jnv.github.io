@@ -18,7 +18,14 @@
       </header>
 
       <form id="puzzle-form" class="puzzle-form">
-        <label for="expression">数式</label>
+        <div class="label-with-illustration">
+          <label for="expression">数式</label>
+          <div
+            id="expression-guide"
+            class="matchstick-line guide-line"
+            aria-label="マッチ棒の数字と演算子"
+          ></div>
+        </div>
         <div class="input-row">
           <input
             id="expression"
@@ -35,7 +42,14 @@
       </form>
 
       <section class="output-section" aria-labelledby="output-title">
-        <h2 id="output-title">出力</h2>
+        <div class="label-with-illustration">
+          <h2 id="output-title">出力</h2>
+          <div
+            id="answer-visual"
+            class="matchstick-line answer-line"
+            aria-label="マッチ棒による解答"
+          ></div>
+        </div>
         <output id="output" class="output" aria-live="polite">
           数式を入力して「解答」を押してください。
         </output>

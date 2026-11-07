@@ -25,6 +25,71 @@
   const form = document.querySelector("#puzzle-form");
   const expressionInput = document.querySelector("#expression");
   const output = document.querySelector("#output");
+  const expressionGuide = document.querySelector("#expression-guide");
+  const answerVisual = document.querySelector("#answer-visual");
+
+  function createGlyph(character) {
+    const glyph = document.createElement("span");
+    glyph.className = "matchstick-glyph";
+    glyph.setAttribute("aria-label", character === "*" ? "×" : character);
+
+    const segments = DIGITS[character]
+      ? [...DIGITS[character]]
+      : character === "+"
+        ? ["operator_horizontal", "operator_vertical"]
+        : character === "-"
+          ? ["operator_horizontal"]
+          : character === "*"
+            ? ["operator_diagonal_left", "operator_diagonal_right"]
+            : character === "="
+              ? ["equal_upper", "equal_lower"]
+              : [];
+    for (const segment of segments) {
+      const stick = document.createElement("span");
+      stick.className = `matchstick-segment segment-${segment}`;
+      glyph.append(stick);
+    }
+    return glyph;
+  }
+
+  function appendMatchstickText(container, text) {
+    for (const character of text) {
+      if (character === " ") {
+        const space = document.createElement("span");
+        space.className = "matchstick-space";
+        container.append(space);
+      } else {
+        container.append(createGlyph(character));
+      }
+    }
+  }
+
+  function renderMatchstickText(container, text) {
+    container.replaceChildren();
+    appendMatchstickText(container, text);
+  }
+
+  function renderExpressionAnswer(inputExpression, solutions) {
+    answerVisual.replaceChildren();
+    for (const [index, solution] of solutions.entries()) {
+      if (index > 0) {
+        const separator = document.createElement("span");
+        separator.className = "answer-separator";
+        separator.textContent = "または";
+        answerVisual.append(separator);
+      }
+      appendMatchstickText(answerVisual, inputExpression);
+      appendMatchstickText(answerVisual, " ");
+      const arrow = document.createElement("span");
+      arrow.className = "answer-arrow";
+      arrow.textContent = "⇢";
+      answerVisual.append(arrow);
+      appendMatchstickText(answerVisual, " ");
+      appendMatchstickText(answerVisual, solution);
+    }
+  }
+
+  renderMatchstickText(expressionGuide, "0123456789+-* ");
 
   function matchsticksForNumber(number) {
     const sticks = new Set();
@@ -187,12 +252,16 @@
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     output.classList.remove("error");
+    answerVisual.replaceChildren();
 
     try {
       const [left, operator, right, result] = parseExpression(
         expressionInput.value,
       );
       const solutions = findSolutions(left, operator, right, result);
+      if (solutions.length) {
+        renderExpressionAnswer(expressionInput.value.trim(), solutions);
+      }
       output.textContent = solutions.length
         ? `解:\n${solutions.join("\n")}`
         : "1本のマッチ棒を移動して成立する式はありません。";
