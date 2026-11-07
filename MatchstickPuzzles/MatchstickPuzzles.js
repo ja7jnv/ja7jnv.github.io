@@ -1,6 +1,14 @@
-(() => {
-  "use strict";
+(() => {            // IIFE
+  "use strict";     // strict mode を有効化して、より安全なJavaScriptコードを実行する。
 
+  /**
+   * 数字と演算子のマッチ棒セグメントの対応表
+   *  + a +
+   *  f   b
+   *  + g +
+   *  e   c
+   *  + d +
+   */
   const DIGITS = {
     0: "abcdef",
     1: "bc",
@@ -28,6 +36,18 @@
   const expressionGuide = document.querySelector("#expression-guide");
   const answerVisual = document.querySelector("#answer-visual");
 
+  /**
+   * 単一文字のマッチ棒グラフィック要素（HTML）を生成する
+   * 入力パラメタ: 
+   *   - character {string}: 描画対象の1文字（数字, '+', '-', '*', '=' など）
+   * 出力値: 
+   *   - {HTMLSpanElement}: マッチ棒セグメントが組み込まれたspan要素
+   * 関数の処理概要:
+   *   1. 外枠となる span.matchstick-glyph 要素を生成する。
+   *   2. 読み上げ用（aria-label）属性を設定する（'*' は '×' に変換）。
+   *   3. 入力文字に対応するマッチ棒セグメント（表示位置）の配列を取得する。
+   *   4. 各セグメントに対応する span.matchstick-segment 要素を生成し、外枠に追加して返す。
+   */
   function createGlyph(character) {
     const glyph = document.createElement("span");
     glyph.className = "matchstick-glyph";
@@ -52,6 +72,18 @@
     return glyph;
   }
 
+  /**
+   * 指定コンテナに文字列全体のマッチ棒グラフィックを追記する
+   * 入力パラメタ: 
+   *   - container {HTMLElement}: グラフィックを追加する親DOM要素
+   *   - text {string}: 描画したい文字列
+   * 出力値: 
+   *   - なし (void)
+   * 関数の処理概要:
+   *   1. 入力文字列を1文字ずつ処理する。
+   *   2. 空白の場合は空白用の span.matchstick-space を追加する。
+   *   3. 文字の場合は createGlyph を使って生成した要素を追加する。
+   */
   function appendMatchstickText(container, text) {
     for (const character of text) {
       if (character === " ") {
@@ -64,11 +96,33 @@
     }
   }
 
+  /**
+   * 指定コンテナの中身をクリアし、文字列全体のマッチ棒グラフィックを再描画する
+   * 入力パラメタ: 
+   *   - container {HTMLElement}: 描画先の親DOM要素
+   *   - text {string}: 描画したい文字列
+   * 出力値: 
+   *   - なし (void)
+   * 関数の処理概要:
+   *   1. container 内の既存要素をすべて削除（クリア）する。
+   *   2. appendMatchstickText を呼び出して新しいグラフィック群を描画する。
+   */
   function renderMatchstickText(container, text) {
     container.replaceChildren();
     appendMatchstickText(container, text);
   }
 
+  /**
+   * 元の数式と解決策（正解の式）のビジュアル比較表示を描画する
+   * 入力パラメタ: 
+   *   - inputExpression {string}: ユーザーが入力した元の数式文字列
+   *   - solutions {Array<string>}: 見つかった解（数式文字列）の配列
+   * 出力値: 
+   *   - なし (void)
+   * 関数の処理概要:
+   *   1. answerVisual DOM要素の中身をクリアする。
+   *   2. 各解について、「元の式 ⇢ 解決後の式」の形式でマッチ棒テキストと矢印、区切り文字（"または"）を組み立てて表示する。
+   */
   function renderExpressionAnswer(inputExpression, solutions) {
     answerVisual.replaceChildren();
     for (const [index, solution] of solutions.entries()) {
@@ -91,6 +145,16 @@
 
   renderMatchstickText(expressionGuide, "0123456789+-* ");
 
+  /**
+   * 数値（複数桁可）を構成するマッチ棒の位置集合（Set）を生成する
+   * 入力パラメタ: 
+   *   - number {number|string}: 対象の数値
+   * 出力値: 
+   *   - {Set<string>}: "桁インデックス:セグメント名" の文字列集合
+   * 関数の処理概要:
+   *   1. 数値を文字列化して桁ごとに分解する。
+   *   2. 各桁の数字に対応するセグメント文字を取得し、桁位置を付与した識別子（例: "0:a"）としてSetに追加して返す。
+   */
   function matchsticksForNumber(number) {
     const sticks = new Set();
     String(number).split("").forEach((digit, digitIndex) => {
@@ -101,6 +165,19 @@
     return sticks;
   }
 
+  /**
+   * 数式全体（左辺・演算子・右辺・結果・等号）を構成する全マッチ棒の識別子集合を生成する
+   * 入力パラメタ: 
+   *   - left {number}: 左辺の数値
+   *   - operator {string}: 演算子 ("+", "-", "*")
+   *   - right {number}: 右辺の数値
+   *   - result {number}: 計算結果の数値
+   * 出力値: 
+   *   - {Set<string>}: "場所:詳細位置" 形式の識別子集合
+   * 関数の処理概要:
+   *   1. 左辺、右辺、結果の数値について matchsticksForNumber を呼び出し、各領域の識別子（例: "left:0:a"）を生成する。
+   *   2. 演算子および等号を構成するマッチ棒の識別子を追加して全体集合を返す。
+   */
   function matchsticksForExpression(left, operator, right, result) {
     const sticks = new Set();
     for (const [position, number] of [
@@ -121,6 +198,19 @@
     return sticks;
   }
 
+  /**
+   * 与えられた数式が数学的に正しいか判定する
+   * 入力パラメタ: 
+   *   - left {number}: 左辺の数値
+   *   - operator {string}: 演算子 ("+", "-", "*")
+   *   - right {number}: 右辺の数値
+   *   - result {number}: 計算結果の数値
+   * 出力値: 
+   *   - {boolean}: 数式として正しければ true、誤りなら false
+   * 関数の処理概要:
+   *   1. 演算子に応じて left と right の計算（加算・減算・乗算）を行う。
+   *   2. 計算結果が result と一致するかどうかを判定する。
+   */
   function isCorrectEquation(left, operator, right, result) {
     return (
       (operator === "+" && left + right === result) ||
@@ -129,6 +219,18 @@
     );
   }
 
+  /**
+   * 2本移動の特殊変形ルール（例: 7→11、4→11などへの変換）に合致するか判定する
+   * 入力パラメタ: 
+   *   - left, operator, right, result {number|string}: 変換前の数式要素
+   *   - newLeft, newOperator, newRight, newResult {number|string}: 変換後の数式要素
+   * 出力値: 
+   *   - {boolean}: 特殊変形ルールに適合すれば true、そうでなければ false
+   * 関数の処理概要:
+   *   1. 変換後の式が数学的に正しいかチェックする。
+   *   2. 演算子と結果値が変化していないことを確認する。
+   *   3. 左右いずれかの数値が SPECIAL_TRANSFORMATIONS 定義内のペア（"7:11" や "4:11"）に該当するか確認する。
+   */
   function isTwoMoveSpecialTransformation(
     left,
     operator,
@@ -153,10 +255,39 @@
     );
   }
 
+  /**
+   * 引き算の項を入れ替えた再配置形式（例: a - b = c ➔ a = b - c）に合致するか判定する
+   * 入力パラメタ: 
+   *   - left {number}: 左辺の数値
+   *   - operator {string}: 演算子
+   *   - right {number}: 右辺の数値
+   *   - result {number}: 計算結果の数値
+   * 出力値: 
+   *   - {boolean}: 条件を満たす場合は true、それ以外は false
+   * 関数の処理概要:
+   *   1. 演算子が "-" であり、かつ left === right - result の関係が成立するか検証する。
+   */
   function isReorderedEquation(left, operator, right, result) {
     return operator === "-" && left === right - result;
   }
 
+  /**
+   * マッチ棒を移動させて成立する正しい数式（解）を探索・抽出する
+   * 入力パラメタ: 
+   *   - left {number}: 初期状態の左辺の数値
+   *   - operator {string}: 初期状態の演算子
+   *   - right {number}: 初期状態の右辺の数値
+   *   - result {number}: 初期状態の結果の数値
+   * 出力値: 
+   *   - {Array<string>}: 発見された正解の数式文字列のリスト
+   * 関数の処理概要:
+   *   1. 元の式のマッチ棒集合を取得する。
+   *   2. 項入れ替え（isReorderedEquation）が可能な場合は解に追加する。
+   *   3. 0〜MAX_NUMBERの数値・全演算子の組み合わせを総当たりループ処理する。
+   *   4. 候補の式が数学的に正しいか、または特殊変形ルールを満たすか検証する。
+   *   5. 元の式と候補の式で差分（取り除いた本数・追加した本数）を比較する。
+   *   6. 移動本数が1本（または特殊変形で2本）の条件を満たす式を解答リストに追加して返す。
+   */
   function findSolutions(left, operator, right, result) {
     const original = matchsticksForExpression(left, operator, right, result);
     const solutions = [];
@@ -230,6 +361,18 @@
     return solutions;
   }
 
+  /**
+   * ユーザーが入力した数式文字列を解析し、検証する
+   * 入力パラメタ: 
+   *   - expression {string}: フォームに入力された数式文字列
+   * 出力値: 
+   *   - {Array<number|string>}: 解析済みの [left, operator, right, result] の配列
+   * 関数の処理概要:
+   *   1. 正規表現で "x [+-*] y = z" のフォーマットを満たしているか検証する（違反時は例外を投げる）。
+   *   2. 各数値が MAX_NUMBER (99) 以下であるか確認する（違反時は例外を投げる）。
+   *   3. 入力された式が「最初から正しい式」になっていないか確認する（正解の式を入力した場合はエラーを投げる）。
+   *   4. 問題なければ数値・演算子を分解して配列として返す。
+   */
   function parseExpression(expression) {
     const match = /^\s*(\d+)\s*([+\-*])\s*(\d+)\s*=\s*(\d+)\s*$/.exec(
       expression,
