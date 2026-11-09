@@ -143,6 +143,26 @@
     }
   }
 
+  function renderExpressionProblem(problemExpressions, answerExpression) {
+    answerVisual.replaceChildren();
+    for (const [index, problem] of problemExpressions.entries()) {
+      if (index > 0) {
+        const separator = document.createElement("span");
+        separator.className = "answer-separator";
+        separator.textContent = "または";
+        answerVisual.append(separator);
+      }
+      appendMatchstickText(answerVisual, problem);
+      appendMatchstickText(answerVisual, " ");
+      const arrow = document.createElement("span");
+      arrow.className = "answer-arrow";
+      arrow.textContent = "⇢";
+      answerVisual.append(arrow);
+      appendMatchstickText(answerVisual, " ");
+      appendMatchstickText(answerVisual, answerExpression);
+    }
+  }
+
   renderMatchstickText(expressionGuide, "0123456789+-* ");
 
   /**
@@ -361,6 +381,89 @@
     return solutions;
   }
 
+  function findProblems(left, operator, right, result) {
+    const target = matchsticksForExpression(left, operator, right, result);
+    const problems = [];
+
+    const numberOptions = (position, targetNumber) => {
+      const targetSticks = new Set(
+        [...matchsticksForNumber(targetNumber)].map(
+          (stick) => `${position}:${stick}`,
+        ),
+      );
+      return Array.from({ length: MAX_NUMBER + 1 }, (_, number) => number)
+        .filter((number) => {
+          const candidateSticks = new Set(
+            [...matchsticksForNumber(number)].map(
+              (stick) => `${position}:${stick}`,
+            ),
+          );
+          const removedCount = [...targetSticks].filter(
+            (stick) => !candidateSticks.has(stick),
+          ).length;
+          const addedCount = [...candidateSticks].filter(
+            (stick) => !targetSticks.has(stick),
+          ).length;
+          return removedCount <= 2 && addedCount <= 2;
+        });
+    };
+
+    const leftOptions = numberOptions("left", left);
+    const rightOptions = numberOptions("right", right);
+    const resultOptions = numberOptions("result", result);
+
+    for (const problemLeft of leftOptions) {
+      for (const problemRight of rightOptions) {
+        for (const problemResult of resultOptions) {
+          for (const problemOperator of Object.keys(OPERATORS)) {
+            if (
+              isCorrectEquation(
+                problemLeft,
+                problemOperator,
+                problemRight,
+                problemResult,
+              )
+            ) {
+              continue;
+            }
+
+            const problem = matchsticksForExpression(
+              problemLeft,
+              problemOperator,
+              problemRight,
+              problemResult,
+            );
+            const removedCount = [...problem].filter(
+              (stick) => !target.has(stick),
+            ).length;
+            const addedCount = [...target].filter(
+              (stick) => !problem.has(stick),
+            ).length;
+            const oneMove = removedCount === 1 && addedCount === 1;
+            const isSpecial = isTwoMoveSpecialTransformation(
+              problemLeft,
+              problemOperator,
+              problemRight,
+              problemResult,
+              left,
+              operator,
+              right,
+              result,
+            );
+            const twoMoves = removedCount === 2 && addedCount === 2;
+            if (oneMove || (isSpecial && twoMoves)) {
+              problems.push(
+                `${problemLeft} ${problemOperator} ` +
+                  `${problemRight} = ${problemResult}`,
+              );
+            }
+          }
+        }
+      }
+    }
+    return problems;
+  }
+
   /**
    * ユーザーが入力した数式文字列を解析し、検証する
    * 入力パラメタ: 
@@ -370,8 +473,7 @@
    * 関数の処理概要:
    *   1. 正規表現で "x [+-*] y = z" のフォーマットを満たしているか検証する（違反時は例外を投げる）。
    *   2. 各数値が MAX_NUMBER (99) 以下であるか確認する（違反時は例外を投げる）。
-   *   3. 入力された式が「最初から正しい式」になっていないか確認する（正解の式を入力した場合はエラーを投げる）。
-   *   4. 問題なければ数値・演算子を分解して配列として返す。
+   *   3. 問題なければ数値・演算子を分解して配列として返す。
    */
   function parseExpression(expression) {
     const match = /^\s*(\d+)\s*([+\-*])\s*(\d+)\s*=\s*(\d+)\s*$/.exec(
@@ -386,9 +488,6 @@
     if (values.some((value) => value > MAX_NUMBER)) {
       throw new Error(`x, y, z は 0以上${MAX_NUMBER}以下の整数にしてください。`);
     }
-    if (isCorrectEquation(values[0], operator, values[1], values[2])) {
-      throw new Error("入力された式は、数学的に正しくない式にしてください。");
-    }
     return [values[0], operator, values[1], values[2]];
   }
 
@@ -401,9 +500,20 @@
       const [left, operator, right, result] = parseExpression(
         expressionInput.value,
       );
+      const inputExpression = expressionInput.value.trim();
+      if (isCorrectEquation(left, operator, right, result)) {
+        const problems = findProblems(left, operator, right, result);
+        if (problems.length) {
+          renderExpressionProblem(problems, inputExpression);
+        }
+        output.textContent = problems.length
+          ? `この式を解とする問題式:\n${problems.join("\n")}`
+          : "この式を解とする問題式はありません。";
+        return;
+      }
       const solutions = findSolutions(left, operator, right, result);
       if (solutions.length) {
-        renderExpressionAnswer(expressionInput.value.trim(), solutions);
+        renderExpressionAnswer(inputExpression, solutions);
       }
       output.textContent = solutions.length
         ? `解:\n${solutions.join("\n")}`
