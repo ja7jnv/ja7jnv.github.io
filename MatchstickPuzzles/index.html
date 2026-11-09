@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>マッチ棒パズル</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="MatchstickPuzzles.js" defer></script>
+  </head>
+  <body>
+    <main class="puzzle">
+      <header>
+        <p class="eyebrow">Matchstick Puzzles</p>
+        <h1>マッチ棒パズル</h1>
+        <p class="description">
+          数式を入力し、マッチ棒を移動して成立する式や、その式を解とする問題式を探します。
+        </p>
+      </header>
+
+      <form id="puzzle-form" class="puzzle-form">
+        <div class="label-with-illustration">
+          <label for="expression">数式</label>
+          <div
+            id="expression-guide"
+            class="matchstick-line guide-line"
+            aria-label="マッチ棒の数字と演算子"
+          ></div>
+        </div>
+        <div class="input-row">
+          <input
+            id="expression"
+            name="expression"
+            type="text"
+            inputmode="text"
+            placeholder="例: 1 + 2 = 4"
+            autocomplete="off"
+            required
+          >
+          <button type="submit">解答</button>
+        </div>
+        <p class="hint">形式: x [+-*] y = z（各数値は0以上99以下）</p>
+      </form>
+
+      <section class="output-section" aria-labelledby="output-title">
+        <div class="label-with-illustration">
+          <h2 id="output-title">出力</h2>
+          <div
+            id="answer-visual"
+            class="matchstick-line answer-line"
+            aria-label="マッチ棒による解答"
+          ></div>
+        </div>
+        <output id="output" class="output" aria-live="polite">
+          数式を入力して「解答」を押してください。
+        </output>
+      </section>
+    </main>
+  </body>
+</html>
