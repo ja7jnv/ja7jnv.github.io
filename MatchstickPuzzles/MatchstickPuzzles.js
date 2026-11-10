@@ -143,6 +143,17 @@
     }
   }
 
+  /**
+   * 問題式と解となる数式のビジュアル比較表示を描画する
+   * 入力パラメタ:
+   *   - problemExpressions {Array<string>}: 見つかった問題式（数式文字列）の配列
+   *   - answerExpression {string}: 解となる数式文字列
+   * 出力値:
+   *   - なし (void)
+   * 関数の処理概要:
+   *   1. answerVisual DOM要素の中身をクリアする。
+   *   2. 各問題式について、「問題式 ⇢ 解となる式」の形式でマッチ棒テキストと矢印、区切り文字（"または"）を組み立てて表示する。
+   */
   function renderExpressionProblem(problemExpressions, answerExpression) {
     answerVisual.replaceChildren();
     for (const [index, problem] of problemExpressions.entries()) {
@@ -381,6 +392,21 @@
     return solutions;
   }
 
+  /**
+   * 正しい数式を解とする、マッチ棒移動前の問題式を探索・抽出する
+   * 入力パラメタ:
+   *   - left {number}: 正しい式の左辺の数値
+   *   - operator {string}: 正しい式の演算子
+   *   - right {number}: 正しい式の右辺の数値
+   *   - result {number}: 正しい式の計算結果の数値
+   * 出力値:
+   *   - {Array<string>}: 発見された問題式の数式文字列のリスト
+   * 関数の処理概要:
+   *   1. 正しい式のマッチ棒集合を取得する。
+   *   2. 各数値について、正しい式との差分が2本以内となる候補を抽出する。
+   *   3. 候補の数値・演算子を組み合わせ、数学的に正しくない問題式を生成する。
+   *   4. 正しい式との差分が1本移動、または特殊変形による2本移動となる問題式を返す。
+   */
   function findProblems(left, operator, right, result) {
     const target = matchsticksForExpression(left, operator, right, result);
     const problems = [];
